@@ -72,7 +72,6 @@ object JavaFormatter {
     def performFormat(files: Set[File]) = {
       for (file <- files if file.exists) {
         try {
-          streams.log.info("Formatting: " + file + " ...")
           val contents = IO.read(file)
           val te: TextEdit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, contents, 0, contents.length(), 0, LineSeparator)
           val formatted = if (te == null) {
