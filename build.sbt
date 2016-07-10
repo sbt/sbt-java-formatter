@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,4 +28,11 @@ lazy val plugin = project
       Library.eclipseJdtCore,
       Library.eclipseText
     )
+  )
+  .settings(
+    ScriptedPlugin.scriptedSettings,
+    scriptedLaunchOpts := { ScriptedPlugin.scriptedLaunchOpts.value ++
+      Seq("-Xmx1024M", "-XX:MaxPermSize=256M", "-Dplugin.version=" + version.value)
+    },
+    ScriptedPlugin.scriptedBufferLog := false
   )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ object Common extends AutoPlugin {
 
   // AutomateHeaderPlugin is not an allRequirements-AutoPlugin, so explicitly add settings here:
   override def projectSettings = scalariformSettings ++ AutomateHeaderPlugin.projectSettings ++ Seq(
-    organization := "com.typesafe.sbt",
+    organization := "com.lightbend.sbt",
     scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-unchecked", "-deprecation", "-feature"),
     javacOptions ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6"),
 
@@ -46,9 +46,9 @@ object Common extends AutoPlugin {
 
     // Header settings
     HeaderPlugin.autoImport.headers := Map(
-      "scala" -> Apache2_0("2015", "Typesafe Inc."),
-      "java" ->  Apache2_0("2015", "Typesafe Inc."),
-      "conf" ->  Apache2_0("2015", "Typesafe Inc.", "#")
+      "scala" -> Apache2_0("2016", "Lightbend Inc."),
+      "java" ->  Apache2_0("2016", "Lightbend Inc."),
+      "conf" ->  Apache2_0("2016", "Lightbend Inc.", "#")
     )
   )
 }
