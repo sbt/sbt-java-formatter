@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,11 @@ object JavaFormatterPlugin extends AutoPlugin {
       SettingKey("java-formatter-source-level", "Java source level. Overrides source level defined in settings.")
     val targetLevel: SettingKey[Option[String]] =
       SettingKey("java-formatter-target-level", "Java target level. Overrides target level defined in settings.")
+    val javaFormattingSettingsFile: SettingKey[Option[File]] =
+      SettingKey("javaFormattingSettingsFile", "XML file with eclipse formatter settings.")
   }
 
   val autoImport = JavaFormatterKeys
-
   import autoImport._
 
   override def trigger = allRequirements
@@ -73,7 +74,9 @@ object JavaFormatterPlugin extends AutoPlugin {
     List(
       (sourceDirectories in format) := List(javaSource.value),
       format := {
-        val formatterSettings = new JavaFormatterSettings(settings.value, sourceLevel.value, targetLevel.value)
+        val sourceLv = sourceLevel.value
+        val targetLv = targetLevel.value
+        val formatterSettings = new JavaFormatterSettings(settings.value, sourceLv, targetLv)
         JavaFormatter(
           (sourceDirectories in format).value.toList,
           (includeFilter in format).value,
@@ -88,8 +91,19 @@ object JavaFormatterPlugin extends AutoPlugin {
   def notToBeScopedSettings: Seq[Setting[_]] =
     List(
       includeFilter in format := "*.java",
-      settings := Map.empty,
       sourceLevel := None,
-      targetLevel := None
+      targetLevel := None,
+      javaFormattingSettingsFile := None,
+      javaFormattingSettingsFile := javaFormattingSettingsFile.value,
+      settings := {
+        javaFormattingSettingsFile.value match {
+          case Some(settingsXml) =>
+            settingsFromProfile(settingsXml)
+          case None =>
+            // can't depend on `streams` in a setting here
+            System.err.println("Define `javaFormattingSettingsFile` to configure the Java formatter.")
+            Map.empty
+        }
+      }
     )
 }
