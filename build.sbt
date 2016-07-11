@@ -29,6 +29,7 @@ lazy val plugin = project
       Library.eclipseText
     )
   )
+  .settings(bintray.Plugin.bintrayPublishSettings: _*)
   .settings(
     ScriptedPlugin.scriptedSettings,
     scriptedLaunchOpts := { ScriptedPlugin.scriptedLaunchOpts.value ++

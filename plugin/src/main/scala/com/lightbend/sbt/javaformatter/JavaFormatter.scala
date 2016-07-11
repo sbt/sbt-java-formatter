@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.typesafe.sbt.javaformatter
+package com.lightbend.sbt.javaformatter
 
 import org.eclipse.jdt.core.formatter.CodeFormatter
 import org.eclipse.jdt.core.{ ToolFactory, JavaCore }

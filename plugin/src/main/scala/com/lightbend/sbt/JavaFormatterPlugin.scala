@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.typesafe.sbt
+package com.lightbend.sbt
 
-import com.typesafe.sbt.javaformatter.JavaFormatter
-import com.typesafe.sbt.javaformatter.JavaFormatter.JavaFormatterSettings
+import com.lightbend.sbt.javaformatter.JavaFormatter
+import com.lightbend.sbt.javaformatter.JavaFormatter.JavaFormatterSettings
 import sbt._
 import sbt.Keys._
 
