@@ -10,15 +10,18 @@ Usage
 1. Add the plugin to `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter"     % JavaFormatterVersion)
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % JavaFormatterVersion)
 ```
 
 2. Prepare a `formatting-java.xml` using Eclipse or steal someone's settings.
 
-3. Point the plugin to the formatting rules by setting the apropriate value:
+3. Profit!
+
+There is one optional step, in case you want to name the file differently,
+in which case you can do so via:
 
 ```scala
-  javaFormattingSettingsFile := Some(file("java-formatting.xml"))
+  javaFormattingSettingsFile := Some(baseDirectory.value / "my-little-formatting-settings.xml")
 ```
 
 Contributing
