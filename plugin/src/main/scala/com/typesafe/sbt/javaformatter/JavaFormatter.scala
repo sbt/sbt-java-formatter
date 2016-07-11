@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package com.typesafe.sbt.javaformatter
 
-import java.io.PrintWriter
-
 import org.eclipse.jdt.core.formatter.CodeFormatter
 import org.eclipse.jdt.core.{ ToolFactory, JavaCore }
 import org.eclipse.jface.text.Document
@@ -31,7 +29,8 @@ object JavaFormatter {
   private val LineSeparator = System.getProperty("line.separator")
 
   object JavaFormatterSettings {
-    val defaults = Map[String, String](JavaCore.COMPILER_SOURCE -> "1.8",
+    val defaults = Map[String, String](
+      JavaCore.COMPILER_SOURCE -> "1.8",
       JavaCore.COMPILER_COMPLIANCE -> "1.8",
       JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM -> "1.8")
   }

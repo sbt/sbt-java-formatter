@@ -1,0 +1,2 @@
+# compile should trigger formatting
+-> compile

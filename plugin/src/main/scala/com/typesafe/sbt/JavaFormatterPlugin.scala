@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,16 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def projectSettings = automateFor(Compile, Test)
 
   def automateFor(configurations: Configuration*): Seq[Setting[_]] = configurations.foldLeft(List.empty[Setting[_]]) {
-    _ ++ inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.JavaFormatterKeys.format).value)
+    _ ++ inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.JavaFormatterKeys.formatJava).value)
   }
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
 
+  val JavaFormatterConfig = config("java-formatter")
+
   object JavaFormatterKeys {
-    val format: TaskKey[Seq[File]] =
+    val formatJava: TaskKey[Seq[File]] =
       TaskKey("java-formatter-format", "Format (Java) sources using the eclipse formatter")
     val settings: SettingKey[Map[String, String]] =
       SettingKey("java-formatter-settings", "A Map of eclipse formatter settings and values")
@@ -44,10 +46,11 @@ object JavaFormatterPlugin extends AutoPlugin {
       SettingKey("java-formatter-source-level", "Java source level. Overrides source level defined in settings.")
     val targetLevel: SettingKey[Option[String]] =
       SettingKey("java-formatter-target-level", "Java target level. Overrides target level defined in settings.")
+    val javaFormattingSettingsFile: SettingKey[Option[File]] =
+      SettingKey("javaFormattingSettingsFile", "XML file with eclipse formatter settings.")
   }
 
   val autoImport = JavaFormatterKeys
-
   import autoImport._
 
   override def trigger = allRequirements
@@ -71,13 +74,16 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   def toBeScopedSettings: Seq[Setting[_]] =
     List(
-      (sourceDirectories in format) := List(javaSource.value),
-      format := {
-        val formatterSettings = new JavaFormatterSettings(settings.value, sourceLevel.value, targetLevel.value)
+      (sourceDirectories in formatJava) := List(javaSource.value),
+      formatJava := {
+        val s = (settings in JavaFormatterConfig).value
+        val sourceLv = (sourceLevel in JavaFormatterConfig).value
+        val targetLv = (targetLevel in JavaFormatterConfig).value
+        val formatterSettings = new JavaFormatterSettings(s, sourceLv, targetLv)
         JavaFormatter(
-          (sourceDirectories in format).value.toList,
-          (includeFilter in format).value,
-          (excludeFilter in format).value,
+          (sourceDirectories in formatJava).value.toList,
+          (includeFilter in formatJava).value,
+          (excludeFilter in formatJava).value,
           thisProjectRef.value,
           configuration.value,
           streams.value,
@@ -87,9 +93,20 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   def notToBeScopedSettings: Seq[Setting[_]] =
     List(
-      includeFilter in format := "*.java",
-      settings := Map.empty,
-      sourceLevel := None,
-      targetLevel := None
+      includeFilter in formatJava := "*.java",
+      sourceLevel in JavaFormatterConfig := None,
+      targetLevel in JavaFormatterConfig := None,
+      javaFormattingSettingsFile in JavaFormatterConfig := None,
+      javaFormattingSettingsFile := (javaFormattingSettingsFile in JavaFormatterConfig).value,
+      settings in JavaFormatterConfig := {
+        javaFormattingSettingsFile.value match {
+          case Some(settingsXml) =>
+            settingsFromProfile(settingsXml)
+          case None =>
+            // can't depend on `streams` in a setting here
+            System.err.println("Define `javaFormattingSettingsFile` to configure the Java formatter.")
+            Map.empty
+        }
+      }
     )
 }

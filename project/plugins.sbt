@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Typesafe Inc.
+ * Copyright 2016 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,3 +18,5 @@ addSbtPlugin("com.github.gseitz" % "sbt-release"     % "1.0.1")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-scalariform" % "1.3.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header"      % "1.5.0")
 addSbtPlugin("me.lessis"         % "bintray-sbt"     % "0.3.0")
+
+libraryDependencies += "org.scala-sbt" % "scripted-plugin" % sbtVersion.value
