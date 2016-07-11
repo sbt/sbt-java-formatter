@@ -61,8 +61,6 @@ object JavaFormatterPlugin extends AutoPlugin {
     _ ++ inConfig(_)(toBeScopedSettings)
   }
 
-  private def setOrNone(value: String): Option[String] = if (value == "default") None else Some(value)
-
   def settingsFromProfile(file: File): Map[String, String] = {
     val xml = scala.xml.XML.loadFile(file)
     (xml \\ "setting").foldLeft(Map.empty[String, String]) {
@@ -93,12 +91,14 @@ object JavaFormatterPlugin extends AutoPlugin {
       includeFilter in format := "*.java",
       sourceLevel := None,
       targetLevel := None,
-      javaFormattingSettingsFile := None,
-      javaFormattingSettingsFile := javaFormattingSettingsFile.value,
+      javaFormattingSettingsFile in ThisBuild := Some(baseDirectory.value / "formatting-java.xml"),
       settings := {
         javaFormattingSettingsFile.value match {
-          case Some(settingsXml) =>
+          case Some(settingsXml) if settingsXml.exists =>
             settingsFromProfile(settingsXml)
+          case Some(settingsXml) =>
+            // can't depend on `streams` in a setting here
+            throw new IllegalArgumentException(s"Configured `javaFormattingSettingsFile` ($settingsXml) does not exist! Unable to format Java code.")
           case None =>
             // can't depend on `streams` in a setting here
             System.err.println("Define `javaFormattingSettingsFile` to configure the Java formatter.")
