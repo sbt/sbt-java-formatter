@@ -1,1 +1,1 @@
-javaFormattingSettingsFile := Some(file("does-not-exist.xml"))
+javaFormattingSettingsFilename := "does-not-exist.xml"

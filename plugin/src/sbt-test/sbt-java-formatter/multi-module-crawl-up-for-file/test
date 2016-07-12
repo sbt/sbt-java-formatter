@@ -1,0 +1,11 @@
+# compile should trigger formatting
+> compile
+
+#$ exec echo "====== FORMATTED ======"
+#$ exec cat src/main/java/com/lightbend/BadFormatting.java
+#$ exec echo "====== EXPECTED ======"
+#$ exec cat src/main/java-expected/com/lightbend/BadFormatting.java
+
+#$ exec echo "====== DIFF ======"
+$ exec diff       src/main/java/com/lightbend/BadFormatting.java        src/main/java-expected/com/lightbend/BadFormatting.java
+$ exec diff inner/src/main/java/com/lightbend/BadFormatting2.java inner/src/main/java-expected/com/lightbend/BadFormatting2.java

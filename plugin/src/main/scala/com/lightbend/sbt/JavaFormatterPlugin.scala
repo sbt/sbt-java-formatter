@@ -21,6 +21,8 @@ import com.lightbend.sbt.javaformatter.JavaFormatter.JavaFormatterSettings
 import sbt._
 import sbt.Keys._
 
+import scala.annotation.tailrec
+
 object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
@@ -44,7 +46,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       SettingKey("java-formatter-source-level", "Java source level. Overrides source level defined in settings.")
     val targetLevel: SettingKey[Option[String]] =
       SettingKey("java-formatter-target-level", "Java target level. Overrides target level defined in settings.")
-    val javaFormattingSettingsFile: SettingKey[Option[File]] =
+    val javaFormattingSettingsFilename: SettingKey[String] =
       SettingKey("javaFormattingSettingsFile", "XML file with eclipse formatter settings.")
   }
 
@@ -72,17 +74,26 @@ object JavaFormatterPlugin extends AutoPlugin {
     List(
       (sourceDirectories in format) := List(javaSource.value),
       format := {
+        val streamz = streams.value
+        val log = streamz.log
         val sourceLv = sourceLevel.value
         val targetLv = targetLevel.value
-        val formatterSettings = new JavaFormatterSettings(settings.value, sourceLv, targetLv)
-        JavaFormatter(
-          (sourceDirectories in format).value.toList,
-          (includeFilter in format).value,
-          (excludeFilter in format).value,
-          thisProjectRef.value,
-          configuration.value,
-          streams.value,
-          formatterSettings)
+        val s = settings.value
+        if (s.isEmpty) {
+          log.warn("Unable to locate formatting preferences, skipping formatting of Java sources!")
+          Seq.empty
+        } else {
+          log.info("")
+          val formatterSettings = new JavaFormatterSettings(s, sourceLv, targetLv)
+          JavaFormatter(
+            (sourceDirectories in format).value.toList,
+            (includeFilter in format).value,
+            (excludeFilter in format).value,
+            thisProjectRef.value,
+            configuration.value,
+            streamz,
+            formatterSettings)
+        }
       }
     )
 
@@ -91,19 +102,28 @@ object JavaFormatterPlugin extends AutoPlugin {
       includeFilter in format := "*.java",
       sourceLevel := None,
       targetLevel := None,
-      javaFormattingSettingsFile in ThisBuild := Some(baseDirectory.value / "formatting-java.xml"),
+      // Don't parse the XML file for every single project over and over again!
+      javaFormattingSettingsFilename := "formatting-java.xml",
       settings := {
-        javaFormattingSettingsFile.value match {
-          case Some(settingsXml) if settingsXml.exists =>
-            settingsFromProfile(settingsXml)
-          case Some(settingsXml) =>
-            // can't depend on `streams` in a setting here
-            throw new IllegalArgumentException(s"Configured `javaFormattingSettingsFile` ($settingsXml) does not exist! Unable to format Java code.")
+        val filename = javaFormattingSettingsFilename.value
+        val settingsFile = locateFormattingXml((baseDirectory in ThisBuild).value, baseDirectory.value, filename)
+
+        settingsFile match {
+          case Some(s) => settingsFromProfile(s)
           case None =>
-            // can't depend on `streams` in a setting here
-            System.err.println("Define `javaFormattingSettingsFile` to configure the Java formatter.")
+            System.err.println(s"Configured `javaFormattingSettingsFilename` (${baseDirectory.value / filename}) does not exist! Unable to format Java code.")
             Map.empty
         }
       }
     )
+
+  @tailrec final def locateFormattingXml(max: File, current: File, name: String): Option[File] = {
+    val now = current / name
+    val `now/project` = current / "project" / name
+    if (`now/project`.exists) Some(`now/project`)
+    else if (now.exists) Some(now)
+    else if (current == max) None
+    else locateFormattingXml(max, new File(current, ".."), name)
+  }
+
 }
