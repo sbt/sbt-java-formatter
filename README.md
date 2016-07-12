@@ -21,7 +21,7 @@ There is one optional step, in case you want to name the file differently,
 in which case you can do so via:
 
 ```scala
-  javaFormattingSettingsFile := Some(baseDirectory.value / "my-little-formatting-settings.xml")
+  javaFormattingSettingsFilename := "my-little-formatting-settings.xml"
 ```
 
 Contributing
