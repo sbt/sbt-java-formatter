@@ -24,6 +24,21 @@ in which case you can do so via:
   javaFormattingSettingsFilename := "my-little-formatting-settings.xml"
 ```
 
+File search order in multi-module projects
+------------------------------------------
+The plugin runs under the assumption that in multi-module projects, the "deeper" projects
+may want to specialize their formatting. In other words, the plugin looks up the config
+file using the folowing order:
+
+```
+1. my-example/project/formatting-java.xml
+2. my-example/formatting-java.xml
+3. project/formatting-java.xml
+4. formatting-java.xml
+```
+
+Always defaulting at the "root" project's `project/formatting-java.xml` (and lastly to `formatting-java.xml`).
+
 Contributing
 ------------
 
