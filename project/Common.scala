@@ -17,7 +17,6 @@
 import sbt._
 import sbt.Keys._
 import de.heikoseeberger.sbtheader.{ HeaderPlugin, AutomateHeaderPlugin }
-import de.heikoseeberger.sbtheader.license.Apache2_0
 import com.typesafe.sbt.SbtScalariform.{ scalariformSettings, ScalariformKeys }
 import scalariform.formatter.preferences._
 
@@ -26,7 +25,7 @@ import scalariform.formatter.preferences._
  */
 object Common extends AutoPlugin {
 
-  override def trigger  = allRequirements
+  override def trigger = allRequirements
 
   override def requires = plugins.JvmPlugin && HeaderPlugin
 
@@ -41,14 +40,10 @@ object Common extends AutoPlugin {
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
       .setPreference(DoubleIndentClassDeclaration, true)
-      .setPreference(PreserveDanglingCloseParenthesis, true)
+      .setPreference(DanglingCloseParenthesis, Preserve)
       .setPreference(AlignParameters, true),
 
     // Header settings
-    HeaderPlugin.autoImport.headers := Map(
-      "scala" -> Apache2_0("2016", "Lightbend Inc."),
-      "java" ->  Apache2_0("2016", "Lightbend Inc."),
-      "conf" ->  Apache2_0("2016", "Lightbend Inc.", "#")
-    )
+    HeaderPlugin.autoImport.headerLicense := Some(HeaderPlugin.autoImport.HeaderLicense.ALv2("2016", "Lightbend Inc."))
   )
 }

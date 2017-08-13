@@ -29,11 +29,11 @@ lazy val plugin = project
       Library.eclipseText
     )
   )
-  .settings(bintray.Plugin.bintrayPublishSettings: _*)
+  .settings(BintrayPlugin.bintrayPublishSettings: _*)
   .settings(
-    ScriptedPlugin.scriptedSettings,
-    scriptedLaunchOpts := { ScriptedPlugin.scriptedLaunchOpts.value ++
+    ScriptedPlugin.projectSettings,
+    scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-XX:MaxPermSize=256M", "-Dplugin.version=" + version.value)
     },
-    ScriptedPlugin.scriptedBufferLog := false
+    scriptedBufferLog := false
   )

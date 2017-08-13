@@ -79,6 +79,11 @@ object JavaFormatterPlugin extends AutoPlugin {
         val sourceLv = sourceLevel.value
         val targetLv = targetLevel.value
         val s = settings.value
+        val sD = (sourceDirectories in format).value.toList
+        val iF = (includeFilter in format).value
+        val eF = (excludeFilter in format).value
+        val tPR = thisProjectRef.value
+        val c = configuration.value
         if (s.isEmpty) {
           log.warn("Unable to locate formatting preferences, skipping formatting of Java sources!")
           Seq.empty
@@ -86,11 +91,11 @@ object JavaFormatterPlugin extends AutoPlugin {
           log.info("")
           val formatterSettings = new JavaFormatterSettings(s, sourceLv, targetLv)
           JavaFormatter(
-            (sourceDirectories in format).value.toList,
-            (includeFilter in format).value,
-            (excludeFilter in format).value,
-            thisProjectRef.value,
-            configuration.value,
+            sD,
+            iF,
+            eF,
+            tPR,
+            c,
             streamz,
             formatterSettings)
         }
