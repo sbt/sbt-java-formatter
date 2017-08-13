@@ -18,10 +18,10 @@ import sbt._
 
 object Version {
   val eclipseJdtCore = "3.10.0.v20140604-1726"
-  val eclipseText    = "3.5.101"
+  val eclipseText = "3.5.101"
 }
 
 object Library {
   val eclipseJdtCore = "org.eclipse.tycho" % "org.eclipse.jdt.core" % Version.eclipseJdtCore
-  val eclipseText    = "org.eclipse.text"  % "org.eclipse.text"     % Version.eclipseText
+  val eclipseText = "org.eclipse.text" % "org.eclipse.text" % Version.eclipseText
 }

@@ -14,6 +14,4 @@
  * limitations under the License.
  */
 
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.0")
-
-libraryDependencies += "org.scala-sbt" % "scripted-plugin" % sbtVersion.value
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "3.0.1")

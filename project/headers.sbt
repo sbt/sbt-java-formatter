@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-import de.heikoseeberger.sbtheader.license.Apache2_0
-
 // This is to add copyright headers to the build files
-inConfig(Compile)(compileInputs.in(compile) <<= compileInputs.in(compile).dependsOn(createHeaders.in(compile)))
+inConfig(Compile)(compileInputs.in(compile) := compileInputs.in(compile).dependsOn(headerCreate.in(compile)).value)
 
-headers := Map(
-  "scala" -> Apache2_0("2016", "Lightbend Inc.")
-)
+headerLicense := Some(HeaderLicense.ALv2("2016", "Lightbend Inc."))

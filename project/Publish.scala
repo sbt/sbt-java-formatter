@@ -16,7 +16,7 @@
 
 import sbt._
 import sbt.Keys._
-import bintray.Keys._
+import bintray.BintrayKeys._
 
 /**
  * Publish to private bintray repository.
@@ -25,14 +25,14 @@ object Publish extends AutoPlugin {
 
   override def trigger = allRequirements
 
-  override def requires = plugins.JvmPlugin 
+  override def requires = plugins.JvmPlugin
 
   override def projectSettings = Seq(
     description := "Formats Java code in your project using the Eclipse formatter.",
-    licenses +=("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     publishMavenStyle := false,
-    repository in bintray := "sbt-plugins",
-    bintrayOrganization in bintray := None
+    bintrayRepository := "sbt-plugins",
+    bintrayOrganization := None
   )
 
 }

@@ -1,1 +1,1 @@
-ScriptedPlugin.scriptedSettings
+ScriptedPlugin.projectSettings

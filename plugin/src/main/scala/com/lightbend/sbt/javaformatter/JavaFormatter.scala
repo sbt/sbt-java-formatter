@@ -35,14 +35,16 @@ object JavaFormatter {
       JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM -> "1.8")
   }
 
-  class JavaFormatterSettings(settingsMap: Map[String, String],
-                              sourceVersion: Option[String],
-                              targetVersion: Option[String]) {
+  class JavaFormatterSettings(
+    settingsMap:   Map[String, String],
+    sourceVersion: Option[String],
+    targetVersion: Option[String]) {
     import JavaFormatterSettings._
 
     val settings: Map[String, String] = {
       // override settings in the map if these are set
-      val merged = List(JavaCore.COMPILER_SOURCE -> sourceVersion,
+      val merged = List(
+        JavaCore.COMPILER_SOURCE -> sourceVersion,
         JavaCore.COMPILER_COMPLIANCE -> sourceVersion,
         JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM -> targetVersion).foldLeft(settingsMap) {
           case (r1, (key, value)) => value.foldLeft(r1) { case (r2, v) => r2.updated(key, v) }
@@ -55,13 +57,14 @@ object JavaFormatter {
     }
   }
 
-  def apply(sourceDirectories: Seq[File],
-            includeFilter: FileFilter,
-            excludeFilter: FileFilter,
-            ref: ProjectRef,
-            configuration: Configuration,
-            streams: TaskStreams,
-            settings: JavaFormatterSettings): Seq[File] = {
+  def apply(
+    sourceDirectories: Seq[File],
+    includeFilter:     FileFilter,
+    excludeFilter:     FileFilter,
+    ref:               ProjectRef,
+    configuration:     Configuration,
+    streams:           TaskStreams,
+    settings:          JavaFormatterSettings): Seq[File] = {
 
     import scala.collection.JavaConverters._
     val formatter = ToolFactory.createCodeFormatter(settings.settings.asJava)
@@ -102,18 +105,19 @@ object JavaFormatter {
     handleFiles(files, cache, logFun("Reformatted %s %s."), _ => ()).toList // recalculate cache because we're formatting in-place
   }
 
-  def handleFiles(files: Set[File],
-                  cache: File,
-                  logFun: String => Unit,
-                  updateFun: Set[File] => Unit): Set[File] = {
+  def handleFiles(
+    files:     Set[File],
+    cache:     File,
+    logFun:    String => Unit,
+    updateFun: Set[File] => Unit): Set[File] = {
 
     def handleUpdate(in: ChangeReport[File], out: ChangeReport[File]) = {
       val files = in.modified -- in.removed
-      inc.Analysis.counted("Java source", "", "s", files.size) foreach logFun
+      internal.inc.Analysis.counted("Java source", "", "s", files.size) foreach logFun
       updateFun(files)
       files
     }
 
-    FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists)(handleUpdate)(files)
+    FileFunction.cached(util.CacheStoreFactory(cache), FilesInfo.hash, FilesInfo.exists)(handleUpdate)(files)
   }
 }
