@@ -1,4 +1,4 @@
-#sbt-java-formatter
+# sbt-java-formatter
 
 [ ![Download](https://api.bintray.com/packages/ktosopl/sbt-plugins/sbt-java-formatter/images/download.svg) ](https://bintray.com/ktosopl/sbt-plugins/sbt-java-formatter/_latestVersion) [![Build Status](https://travis-ci.org/typesafehub/sbt-java-formatter.svg?branch=master)](https://travis-ci.org/typesafehub/sbt-java-formatter)
 
