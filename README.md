@@ -4,6 +4,8 @@
 
 An sbt plugin for formating Java code. Ideas from this [blog post](https://ssscripting.wordpress.com/2009/06/10/how-to-use-the-eclipse-code-formatter-from-your-code/) and this [maven plugin](https://github.com/revelc/formatter-maven-plugin).
 
+Use `0.3.0`+ for sbt 1.0.0, and `0.2.0` for previous versions of sbt.
+
 Usage
 -----
 
