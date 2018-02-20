@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+addSbtPlugin("com.dwijnand" % "sbt-dynver" % "2.1.0")
+
 addSbtPlugin("com.jsuereth"      % "sbt-pgp"         % "1.1.0-M1")
 addSbtPlugin("com.github.gseitz" % "sbt-release"     % "1.0.6")
 addSbtPlugin("org.scalariform"  % "sbt-scalariform" % "1.8.0")
