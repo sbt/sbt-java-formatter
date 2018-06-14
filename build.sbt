@@ -25,8 +25,7 @@ lazy val plugin = project
     name := "sbt-java-formatter",
     sbtPlugin := true,
     libraryDependencies ++= Seq(
-      Library.eclipseJdtCore,
-      Library.eclipseText
+      "com.google.googlejavaformat" % "google-java-format" % "1.6"
     )
   )
   .settings(BintrayPlugin.bintrayPublishSettings: _*)

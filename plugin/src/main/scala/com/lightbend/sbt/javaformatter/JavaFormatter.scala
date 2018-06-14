@@ -16,46 +16,13 @@
 
 package com.lightbend.sbt.javaformatter
 
-import org.eclipse.jdt.core.formatter.CodeFormatter
-import org.eclipse.jdt.core.{ ToolFactory, JavaCore }
-import org.eclipse.jface.text.Document
-import org.eclipse.text.edits.TextEdit
+import com.google.googlejavaformat.java.Formatter
 import sbt._
 import sbt.Keys._
+
 import scala.collection.immutable.Seq
 
 object JavaFormatter {
-  // TODO configurable
-  private val LineSeparator = System.getProperty("line.separator")
-
-  object JavaFormatterSettings {
-    val defaults = Map[String, String](
-      JavaCore.COMPILER_SOURCE -> "1.8",
-      JavaCore.COMPILER_COMPLIANCE -> "1.8",
-      JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM -> "1.8")
-  }
-
-  class JavaFormatterSettings(
-    settingsMap:   Map[String, String],
-    sourceVersion: Option[String],
-    targetVersion: Option[String]) {
-    import JavaFormatterSettings._
-
-    val settings: Map[String, String] = {
-      // override settings in the map if these are set
-      val merged = List(
-        JavaCore.COMPILER_SOURCE -> sourceVersion,
-        JavaCore.COMPILER_COMPLIANCE -> sourceVersion,
-        JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM -> targetVersion).foldLeft(settingsMap) {
-          case (r1, (key, value)) => value.foldLeft(r1) { case (r2, v) => r2.updated(key, v) }
-        }
-      // add defaults unless they are set in the map
-      val withDefaults = defaults.foldLeft(merged) {
-        case (r, (key, value)) => r.updated(key, r.getOrElse(key, value))
-      }
-      withDefaults
-    }
-  }
 
   def apply(
     sourceDirectories: Seq[File],
@@ -63,11 +30,9 @@ object JavaFormatter {
     excludeFilter:     FileFilter,
     ref:               ProjectRef,
     configuration:     Configuration,
-    streams:           TaskStreams,
-    settings:          JavaFormatterSettings): Seq[File] = {
+    streams:           TaskStreams): Seq[File] = {
 
-    import scala.collection.JavaConverters._
-    val formatter = ToolFactory.createCodeFormatter(settings.settings.asJava)
+    val formatter = new Formatter()
 
     def log(label: String, logger: Logger)(message: String)(count: String) =
       logger.info(message.format(count, label))
@@ -76,16 +41,7 @@ object JavaFormatter {
       for (file <- files if file.exists) {
         try {
           val contents = IO.read(file)
-          val te: TextEdit = formatter.format(CodeFormatter.K_COMPILATION_UNIT, contents, 0, contents.length(), 0, LineSeparator)
-          val formatted = if (te == null) {
-            // TODO a bit more informative maybe?
-            streams.log.warn(s"Java Formatter can't create formatter for $file")
-            contents
-          } else {
-            val doc = new Document(contents)
-            te.apply(doc)
-            doc.get()
-          }
+          val formatted = formatter.formatSource(contents)
           if (formatted != contents) IO.write(file, formatted)
         } catch {
           // TODO what type of exceptions can we get here?
