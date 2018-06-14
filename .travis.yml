@@ -1,5 +1,22 @@
 sudo: false
 language: scala
-jdk:
-  - oraclejdk8
-script: sbt scripted
+jdk: oraclejdk8
+
+jobs:
+  include:
+     - stage: test
+       script: sbt scripted
+
+stages:
+  # runs on master commits and PRs
+  - name: test
+    if: NOT tag =~ ^v
+
+before_cache:
+  - find $HOME/.ivy2/ -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt   -name "*.lock"               -print -delete
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot

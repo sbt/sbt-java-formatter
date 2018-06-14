@@ -5,6 +5,5 @@ public class BadFormatting2 {
     example();
   }
 
-  public void example() {
-  }
+  public void example() {}
 }
