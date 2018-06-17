@@ -1,6 +1,0 @@
-# compile should trigger formatting
-> compile
-
-$ exec diff                               src/main/java/com/lightbend/BadFormatting.java                                    src/main/java-expected/com/lightbend/BadFormatting.java
-$ exec diff                         inner/src/main/java/com/lightbend/BadFormatting2.java                             inner/src/main/java-expected/com/lightbend/BadFormatting2.java
-$ exec diff inner-with-setting-in-project/src/main/java/com/lightbend/BadFormattingProj3.java inner-with-setting-in-project/src/main/java-expected/com/lightbend/BadFormattingProj3.java
