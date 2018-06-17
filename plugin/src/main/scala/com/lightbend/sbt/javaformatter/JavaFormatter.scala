@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Lightbend Inc.
+ * Copyright 2015 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ object JavaFormatter {
 
   def apply(
     sourceDirectories: Seq[File],
-    includeFilter:     FileFilter,
-    excludeFilter:     FileFilter,
-    ref:               ProjectRef,
-    configuration:     Configuration,
-    streams:           TaskStreams): Seq[File] = {
+    includeFilter: FileFilter,
+    excludeFilter: FileFilter,
+    ref: ProjectRef,
+    configuration: Configuration,
+    streams: TaskStreams): Seq[File] = {
 
     val formatter = new Formatter()
 
@@ -62,9 +62,9 @@ object JavaFormatter {
   }
 
   def handleFiles(
-    files:     Set[File],
-    cache:     File,
-    logFun:    String => Unit,
+    files: Set[File],
+    cache: File,
+    logFun: String => Unit,
     updateFun: Set[File] => Unit): Set[File] = {
 
     def handleUpdate(in: ChangeReport[File], out: ChangeReport[File]) = {

@@ -1,34 +1,39 @@
-/*
- * Copyright 2016 Lightbend Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import scalariform.formatter.preferences._
 
 lazy val sbtJavaFormatter = project
   .in(file("."))
   .aggregate(plugin)
-  .enablePlugins(NoPublish)
+  .settings(skip in publish := true)
 
 lazy val plugin = project
   .in(file("plugin"))
   .settings(
+    organization := "com.lightbend.sbt",
     name := "sbt-java-formatter",
     sbtPlugin := true,
     libraryDependencies ++= Seq(
       "com.google.googlejavaformat" % "google-java-format" % "1.6"
-    )
+    ),
+
+    organizationName := "Lightbend Inc.",
+    startYear := Some(2015),
+    description := "Formats Java code in your project.",
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
+
+    bintrayRepository := "sbt-plugins",
+    bintrayOrganization := None,
+
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-unchecked", "-deprecation", "-feature"),
+    javacOptions ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6"),
+
+    ScalariformKeys.preferences := ScalariformKeys.preferences.value
+      .setPreference(AlignSingleLineCaseStatements, true)
+      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
+      .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(DanglingCloseParenthesis, Preserve)
+      .setPreference(AlignParameters, true),
   )
-  .settings(BintrayPlugin.bintrayPublishSettings: _*)
   .settings(
     ScriptedPlugin.projectSettings,
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
@@ -36,3 +41,4 @@ lazy val plugin = project
     },
     scriptedBufferLog := false
   )
+  .enablePlugins(AutomateHeaderPlugin)
