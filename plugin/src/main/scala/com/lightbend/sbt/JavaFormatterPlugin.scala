@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Lightbend Inc.
+ * Copyright 2015 Lightbend Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,12 +79,10 @@ object JavaFormatterPlugin extends AutoPlugin {
           tPR,
           c,
           streamz)
-      }
-    )
+      })
 
   def notToBeScopedSettings: Seq[Setting[_]] =
     List(
-      includeFilter in format := "*.java"
-    )
+      includeFilter in format := "*.java")
 
 }

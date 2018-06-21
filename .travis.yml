@@ -7,10 +7,18 @@ jobs:
      - stage: test
        script: sbt scripted
 
+     - stage: publish
+       script: sbt publish
+
 stages:
   # runs on master commits and PRs
   - name: test
     if: NOT tag =~ ^v
+
+  # runs on main repo master commits or version-tagged commits
+  - name: publish
+    if: repo = sbt/sbt-java-formatter AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+
 
 before_cache:
   - find $HOME/.ivy2/ -name "ivydata-*.properties" -print -delete
@@ -20,3 +28,10 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+
+env:
+  global:
+    # encrypt with: travis encrypt BINTRAY_USER=...
+    - secure: "mToe3N5fQj06rPdsgQxRUASQtZLlEHKKB45g+E+9vseJBTqXcoSM9C2KmQB4Xw2G2Nu7aBJrua36Cz+WF7J4SXUlh6IoY4RwjDjvLFzpLM0j4GCZlZAy0g3f5cOQpp87J03ujhleyEcuPNU1eqZUwSgyJyAiRfnG6wylGbgjPA9gy6HivSCBeVTrcAzQnT4iJbUHJQfWv2vrEwoqm+hqy/fEVAaoG+Pe7yBiA33gcg6ovt2mB5nycpkfPVvU2V/aTUv+bNlLVc1GqVkTVgq4t5qPL0J7rduaK6tp6gopGxdDapbxoUdMv7J+jrbg4jWsSSx6UlR6JclQKCCbatKi+nnXcKQnC33PN6dFWjyKTXB7nRUGlPJ16RyJA2NUi9Ip7rgZeVbAKNnShy5aG6XcnKrGRCkdATB1A+whQZ5sCpQ4kQ48swQZSA0QUIhknITKwC91ONsYiXGEkSjXRtz98aXSqcGG6nP4IjgNsHiBmr5i//xDFnYqNxKBV48Vvyv+QdrhBprrmgfe9vTQWdpalu1HZuAnax9JaUfTx8ujJ3sOZAQ+uQplK/kXo5NnyptcVdOoPu2ddFN5gtWbg7jGC/Iza6vGszFtOw2xoPT/BMetgTp5Ncv+ZNYY6jfRIlRX2BMYtH9HZU2fSSxs7YQs5TI5C/yMb/wXKDEcMPwet+Y="
+    # encrypt with: travis encrypt BINTRAY_PASS=...
+    - secure: "dLRZeB2nBuy7b6a6qXjiTeznGyKmH6Mbgi4OoAZMJAEt0WBQTcibjzC/5IBDpqzUVNMovUsfqypJzRhbTvPI70V/XjEUT987mOewK92hKISbSGkZ3wGgrMoskrVHvtro5QPoWqawy5sAGiI0qyyBj0d1m4hRB7pWpSwCLUbJIGcJRTBMGK6XzuKcqfuRwihr0dZFLQJnWc961+UykKvBF98MyMyaVvohRdundHik32J7gTGkPl3WINKk+LnUHjCXYEeZikphrxWbrS4M6PJmOkOpO7K/nariPzWYIifTDmxmF5YWa6DMzFsADlujObWotMwsDBTXh96b9Z+nYW+sG9GSYJIvW9i4dUPlPDDiDhXRdnYqo3adydwHwmmc/W6W6T2MCXXFQDYmFdE3Y4N9PrdrZGloLT0ZhPgLZ1lzEY6VoxuoEuj2uk6K3N/Z2aCUwls/lQhepvbEuWBZhtUP/fB+lBs85DGHl5uTFo2Mx9GDrwtoUA/Hgc3pIF3MSfd5dbulDYl4wKGDOXWhFn+LcTR6B2myZIxbuzvlJ65ABkiFLSv1JadsMp/tPb3xXYs4VdKijsZzOWYboDa0XM8Jp1yRnV3rQ42b0HTcDtyVkuenZ0MWVdi63tgZhN2F2/piWceYlpUQsTAAak4LC/9YJUPMjuaxMJY1yMX/IguBFp4="
