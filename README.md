@@ -20,7 +20,7 @@ Usage
 Add the plugin to `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.3.0")
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
 ```
 
 Contributing
