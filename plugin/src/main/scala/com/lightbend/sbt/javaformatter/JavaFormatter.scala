@@ -19,6 +19,7 @@ package com.lightbend.sbt.javaformatter
 import com.google.googlejavaformat.java.Formatter
 import sbt._
 import sbt.Keys._
+import SbtCompat.{ Analysis, FileFunction }
 
 import scala.collection.immutable.Seq
 
@@ -69,11 +70,11 @@ object JavaFormatter {
 
     def handleUpdate(in: ChangeReport[File], out: ChangeReport[File]) = {
       val files = in.modified -- in.removed
-      internal.inc.Analysis.counted("Java source", "", "s", files.size) foreach logFun
+      Analysis.counted("Java source", "", "s", files.size) foreach logFun
       updateFun(files)
       files
     }
 
-    FileFunction.cached(util.CacheStoreFactory(cache), FilesInfo.hash, FilesInfo.exists)(handleUpdate)(files)
+    FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists)(handleUpdate)(files)
   }
 }
