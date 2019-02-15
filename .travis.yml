@@ -10,7 +10,7 @@ jobs:
      - stage: publish
        script:
         - sbt publish
-        - sbt ^^0.13.18 ++2.10.7 publish
+        - sbt ^^0.13.18 ++2.10.7! publish
 
 stages:
   # runs on master commits and PRs
