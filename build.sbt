@@ -8,10 +8,10 @@ lazy val sbtJavaFormatter = project
 
 lazy val plugin = project
   .in(file("plugin"))
+  .enablePlugins(SbtPlugin)
   .settings(
     organization := "com.lightbend.sbt",
     name := "sbt-java-formatter",
-    sbtPlugin := true,
     libraryDependencies ++= Seq(
       "com.google.googlejavaformat" % "google-java-format" % "1.6"
     ),
@@ -33,9 +33,7 @@ lazy val plugin = project
       .setPreference(DoubleIndentClassDeclaration, true)
       .setPreference(DanglingCloseParenthesis, Preserve)
       .setPreference(AlignParameters, true),
-  )
-  .settings(
-    ScriptedPlugin.projectSettings,
+
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
