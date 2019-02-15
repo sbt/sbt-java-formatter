@@ -16,7 +16,7 @@ Usage
 Add the plugin to `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.2")
 ```
 
 Use [![scaladex-badge][]][scaladex] for sbt 1.x, and `0.2.0` for previous versions of sbt.
