@@ -30,15 +30,16 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def projectSettings = automateFor(Compile, Test)
 
   def automateFor(configurations: Configuration*): Seq[Setting[_]] = configurations.foldLeft(List.empty[Setting[_]]) {
-    _ ++ inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.JavaFormatterKeys.format).value)
+    _ ++ inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.JavaFormatterKeys.javafmt).value)
   }
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
 
   object JavaFormatterKeys {
-    val format: TaskKey[Seq[File]] =
-      TaskKey("javafmt", "Format Java sources")
+    val javafmt: TaskKey[Seq[File]] = taskKey("Format Java sources")
+    @deprecated("Use javafmt", "0.4.4")
+    val format: TaskKey[Seq[File]] = javafmt
   }
 
   val autoImport = JavaFormatterKeys
@@ -63,13 +64,13 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   def toBeScopedSettings: Seq[Setting[_]] =
     List(
-      (sourceDirectories in format) := List(javaSource.value),
-      format := {
+      (sourceDirectories in javafmt) := List(javaSource.value),
+      javafmt := {
         val streamz = streams.value
         val log = streamz.log
-        val sD = (sourceDirectories in format).value.toList
-        val iF = (includeFilter in format).value
-        val eF = (excludeFilter in format).value
+        val sD = (sourceDirectories in javafmt).value.toList
+        val iF = (includeFilter in javafmt).value
+        val eF = (excludeFilter in javafmt).value
         val tPR = thisProjectRef.value
         val c = configuration.value
         JavaFormatter(
@@ -83,6 +84,6 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   def notToBeScopedSettings: Seq[Setting[_]] =
     List(
-      includeFilter in format := "*.java")
+      includeFilter in javafmt := "*.java")
 
 }
