@@ -13,7 +13,7 @@ lazy val plugin = project
     organization := "com.lightbend.sbt",
     name := "sbt-java-formatter",
     libraryDependencies ++= Seq(
-      "com.google.googlejavaformat" % "google-java-format" % "1.6"
+      "com.google.googlejavaformat" % "google-java-format" % "1.7"
     ),
 
     organizationName := "Lightbend Inc.",
