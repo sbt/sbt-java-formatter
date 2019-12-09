@@ -26,12 +26,12 @@ import scala.collection.immutable.Seq
 object JavaFormatter {
 
   def apply(
-    sourceDirectories: Seq[File],
-    includeFilter: FileFilter,
-    excludeFilter: FileFilter,
-    ref: ProjectRef,
-    configuration: Configuration,
-    streams: TaskStreams): Seq[File] = {
+      sourceDirectories: Seq[File],
+      includeFilter: FileFilter,
+      excludeFilter: FileFilter,
+      ref: ProjectRef,
+      configuration: Configuration,
+      streams: TaskStreams): Seq[File] = {
 
     val formatter = new Formatter()
 
@@ -62,15 +62,11 @@ object JavaFormatter {
     handleFiles(files, cache, logFun("Reformatted %s %s."), _ => ()).toList // recalculate cache because we're formatting in-place
   }
 
-  def handleFiles(
-    files: Set[File],
-    cache: File,
-    logFun: String => Unit,
-    updateFun: Set[File] => Unit): Set[File] = {
+  def handleFiles(files: Set[File], cache: File, logFun: String => Unit, updateFun: Set[File] => Unit): Set[File] = {
 
     def handleUpdate(in: ChangeReport[File], out: ChangeReport[File]) = {
       val files = in.modified -- in.removed
-      Analysis.counted("Java source", "", "s", files.size) foreach logFun
+      Analysis.counted("Java source", "", "s", files.size).foreach(logFun)
       updateFun(files)
       files
     }
