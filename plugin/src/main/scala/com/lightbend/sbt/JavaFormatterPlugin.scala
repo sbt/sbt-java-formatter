@@ -63,27 +63,18 @@ object JavaFormatterPlugin extends AutoPlugin {
   }
 
   def toBeScopedSettings: Seq[Setting[_]] =
-    List(
-      (sourceDirectories in javafmt) := List(javaSource.value),
-      javafmt := {
-        val streamz = streams.value
-        val log = streamz.log
-        val sD = (sourceDirectories in javafmt).value.toList
-        val iF = (includeFilter in javafmt).value
-        val eF = (excludeFilter in javafmt).value
-        val tPR = thisProjectRef.value
-        val c = configuration.value
-        JavaFormatter(
-          sD,
-          iF,
-          eF,
-          tPR,
-          c,
-          streamz)
-      })
+    List((sourceDirectories in javafmt) := List(javaSource.value), javafmt := {
+      val streamz = streams.value
+      val log = streamz.log
+      val sD = (sourceDirectories in javafmt).value.toList
+      val iF = (includeFilter in javafmt).value
+      val eF = (excludeFilter in javafmt).value
+      val tPR = thisProjectRef.value
+      val c = configuration.value
+      JavaFormatter(sD, iF, eF, tPR, c, streamz)
+    })
 
   def notToBeScopedSettings: Seq[Setting[_]] =
-    List(
-      includeFilter in javafmt := "*.java")
+    List(includeFilter in javafmt := "*.java")
 
 }
