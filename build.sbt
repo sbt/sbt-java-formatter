@@ -1,5 +1,3 @@
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import scalariform.formatter.preferences._
 
 lazy val sbtJavaFormatter = project
   .in(file("."))
@@ -11,12 +9,14 @@ lazy val plugin = project
   .enablePlugins(SbtPlugin)
   .settings(
     organization := "com.lightbend.sbt",
+    organizationName := "Lightbend Inc.",
+    organizationHomepage := Some(url("https://lightbend.com")),
     name := "sbt-java-formatter",
+    homepage := Some(url("https://github.com/sbt/sbt-java-formatter")),
     libraryDependencies ++= Seq(
       "com.google.googlejavaformat" % "google-java-format" % "1.7"
     ),
 
-    organizationName := "Lightbend Inc.",
     startYear := Some(2015),
     description := "Formats Java code in your project.",
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
@@ -24,19 +24,13 @@ lazy val plugin = project
     bintrayRepository := "sbt-plugins",
     bintrayOrganization := Some("ktosopl"),
 
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-unchecked", "-deprecation", "-feature"),
-    javacOptions ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6"),
-
-    ScalariformKeys.preferences := ScalariformKeys.preferences.value
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
-      .setPreference(DoubleIndentClassDeclaration, true)
-      .setPreference(DanglingCloseParenthesis, Preserve)
-      .setPreference(AlignParameters, true),
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
+    javacOptions ++= Seq("-encoding", "UTF-8"),
 
     scriptedLaunchOpts := { scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
-    scriptedBufferLog := false
+    scriptedBufferLog := false,
+    scalafmtOnCompile := true
   )
   .enablePlugins(AutomateHeaderPlugin)
