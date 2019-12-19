@@ -15,6 +15,7 @@ lazy val plugin = project
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     bintrayRepository := "sbt-plugins",
     bintrayOrganization := Some("ktosopl"),
+    crossSbtVersions := List("1.1.0"),
     scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
     javacOptions ++= Seq("-encoding", "UTF-8"),
     scriptedLaunchOpts := {
@@ -22,5 +23,8 @@ lazy val plugin = project
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
     scriptedBufferLog := false,
-    scalafmtOnCompile := true)
+    scalafmtOnCompile := true,
+    // don't do any API docs
+    doc / sources := Seq(),
+    packageDoc / publishArtifact := false)
   .enablePlugins(AutomateHeaderPlugin)

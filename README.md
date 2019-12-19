@@ -16,10 +16,16 @@ Usage
 Add the plugin to `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.3")
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % --latest version---)
 ```
 
-Use [![scaladex-badge][]][scaladex] for sbt 1.x, and `0.2.0` for previous versions of sbt.
+For available versions see [releases](https://github.com/sbt/sbt-java-formatter/releases).
+
+* `javafmt` formats Java files (done automatically on `compile` for `Compile` and `Test` configurations, unless `AutomateJavaFormatterPlugin` is disabled)
+* `javafmtAll` formats Java files for all configurations (`Compile` and `Test` by default)
+* `javafmtCheck` fails if files need reformatting
+* `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
+
 
 Configuration
 -------------

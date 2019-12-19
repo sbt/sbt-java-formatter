@@ -17,61 +17,64 @@
 package com.lightbend.sbt
 
 import com.lightbend.sbt.javaformatter.JavaFormatter
-import sbt._
 import sbt.Keys._
-
-import scala.annotation.tailrec
+import sbt.{ Def, _ }
 
 object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
   override def `requires` = plugins.JvmPlugin
 
-  override def projectSettings = automateFor(Compile, Test)
+  override def projectSettings =
+    Seq(Compile, Test).flatMap(inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.autoImport.javafmt).value))
 
-  def automateFor(configurations: Configuration*): Seq[Setting[_]] = configurations.foldLeft(List.empty[Setting[_]]) {
-    _ ++ inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.JavaFormatterKeys.javafmt).value)
-  }
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
 
-  object JavaFormatterKeys {
-    val javafmt: TaskKey[Seq[File]] = taskKey("Format Java sources")
-    @deprecated("Use javafmt", "0.4.4")
-    val format: TaskKey[Seq[File]] = javafmt
+  object autoImport {
+    val javafmt: TaskKey[Unit] = taskKey("Format Java sources")
+    val javafmtCheck: TaskKey[Boolean] = taskKey("Fail, if a Java source needs reformatting.")
+    val javafmtAll: TaskKey[Unit] = taskKey(
+      "Execute the javafmt task for all configurations in which it is enabled. " +
+      "(By default this means the Compile and Test configurations.)")
+    val javafmtCheckAll: TaskKey[Unit] = taskKey(
+      "Execute the javafmtCheck task for all configurations in which it is enabled. " +
+      "(By default this means the Compile and Test configurations.)")
   }
 
-  val autoImport = JavaFormatterKeys
   import autoImport._
 
   override def trigger = allRequirements
 
   override def `requires` = plugins.JvmPlugin
 
-  override def projectSettings = settingsFor(Compile, Test) ++ notToBeScopedSettings
+  override def projectSettings: Seq[Def.Setting[_]] = {
+    val anyConfigsInThisProject = ScopeFilter(configurations = inAnyConfiguration)
 
-  def settingsFor(configurations: Configuration*): Seq[Setting[_]] = configurations.foldLeft(List.empty[Setting[_]]) {
-    _ ++ inConfig(_)(toBeScopedSettings)
-  }
-
-  def settingsFromProfile(file: File): Map[String, String] = {
-    val xml = scala.xml.XML.loadFile(file)
-    (xml \\ "setting").foldLeft(Map.empty[String, String]) {
-      case (r, node) => r.updated((node \ "@id").text, (node \ "@value").text)
-    }
+    notToBeScopedSettings ++
+    Seq(Compile, Test).flatMap(inConfig(_)(toBeScopedSettings)) ++
+    Seq(
+      javafmtAll := javafmt.?.all(anyConfigsInThisProject).value,
+      javafmtCheckAll := javafmtCheck.?.all(anyConfigsInThisProject).value)
   }
 
   def toBeScopedSettings: Seq[Setting[_]] =
-    List((sourceDirectories in javafmt) := List(javaSource.value), javafmt := {
+    List((javafmt / sourceDirectories) := List(javaSource.value), javafmt := {
       val streamz = streams.value
-      val log = streamz.log
-      val sD = (sourceDirectories in javafmt).value.toList
-      val iF = (includeFilter in javafmt).value
-      val eF = (excludeFilter in javafmt).value
-      val tPR = thisProjectRef.value
-      val c = configuration.value
-      JavaFormatter(sD, iF, eF, tPR, c, streamz)
+      val sD = (javafmt / sourceDirectories).value.toList
+      val iF = (javafmt / includeFilter).value
+      val eF = (javafmt / excludeFilter).value
+      val cache = streamz.cacheStoreFactory
+      JavaFormatter(sD, iF, eF, streamz, cache)
+    }, javafmtCheck := {
+      val streamz = streams.value
+      val baseDir = (ThisBuild / baseDirectory).value
+      val sD = (javafmt / sourceDirectories).value.toList
+      val iF = (javafmt / includeFilter).value
+      val eF = (javafmt / excludeFilter).value
+      val cache = (javafmt / streams).value.cacheStoreFactory
+      JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache)
     })
 
   def notToBeScopedSettings: Seq[Setting[_]] =

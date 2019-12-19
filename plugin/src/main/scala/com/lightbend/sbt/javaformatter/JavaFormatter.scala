@@ -17,9 +17,10 @@
 package com.lightbend.sbt.javaformatter
 
 import com.google.googlejavaformat.java.Formatter
-import sbt._
 import sbt.Keys._
-import SbtCompat.{ Analysis, FileFunction }
+import sbt._
+import sbt.util.CacheImplicits._
+import sbt.util.{ CacheStoreFactory, FileInfo, Logger }
 
 import scala.collection.immutable.Seq
 
@@ -29,48 +30,130 @@ object JavaFormatter {
       sourceDirectories: Seq[File],
       includeFilter: FileFilter,
       excludeFilter: FileFilter,
-      ref: ProjectRef,
-      configuration: Configuration,
-      streams: TaskStreams): Seq[File] = {
+      streams: TaskStreams,
+      cacheStoreFactory: CacheStoreFactory): Unit = {
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter)
+  }
 
-    val formatter = new Formatter()
+  def check(
+      baseDir: File,
+      sourceDirectories: Seq[File],
+      includeFilter: FileFilter,
+      excludeFilter: FileFilter,
+      streams: TaskStreams,
+      cacheStoreFactory: CacheStoreFactory): Boolean = {
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
+    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter)
+    trueOrBoom(analysis)
+  }
 
-    def log(label: String, logger: Logger)(message: String)(count: String) =
-      logger.info(message.format(count, label))
+  private def plural(i: Int) = if (i == 1) "" else "s"
 
-    def performFormat(files: Set[File]) = {
-      for (file <- files if file.exists) {
-        try {
-          val contents = IO.read(file)
-          val formatted = formatter.formatSource(contents)
-          if (formatted != contents) IO.write(file, formatted)
-        } catch {
-          // TODO what type of exceptions can we get here?
-          case e: Exception =>
-            streams.log.warn(s"Java Formatter error for $file: ${e.getMessage}")
-        }
+  private def trueOrBoom(analysis: Analysis): Boolean = {
+    val failureCount = analysis.failedCheck.size
+    if (failureCount > 0) {
+      throw new MessageOnlyException(s"${failureCount} file${plural(failureCount)} must be formatted")
+    }
+    true
+  }
+
+  case class Analysis(failedCheck: Set[File])
+
+  object Analysis {
+
+    import sjsonnew.{ :*:, LList, LNil }
+
+    implicit val analysisIso = LList.iso({ a: Analysis =>
+      ("failedCheck", a.failedCheck) :*: LNil
+    }, { in: (Set[File] :*: LNil) =>
+      Analysis(in.head)
+    })
+  }
+
+  private def cachedCheckSources(cacheStoreFactory: CacheStoreFactory, baseDir: File, sources: Seq[File], log: Logger)(
+      implicit formatter: Formatter): Analysis = {
+    trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
+      log.debug(outDiff.toString)
+      val updatedOrAdded = outDiff.modified & outDiff.checked
+      val filesToCheck: Set[File] = updatedOrAdded
+      val prevFailed: Set[File] = prev.failedCheck & outDiff.unmodified
+      prevFailed.foreach { file =>
+        warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log)
+      }
+      val result = checkSources(baseDir, filesToCheck.toList, log)
+      prev.copy(failedCheck = result.failedCheck | prevFailed)
+    }
+  }
+
+  private def warnBadFormat(file: File, log: Logger): Unit = {
+    log.warn(s"${file.toString} isn't formatted properly!")
+  }
+
+  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit formatter: Formatter): Analysis = {
+    if (sources.nonEmpty) {
+      log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
+    }
+    val unformatted = withFormattedSources(sources, log)((file, input, output) => {
+      val diff = input != output
+      if (diff) {
+        warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log)
+        Some(file)
+      } else None
+    }).flatten.flatten.toSet
+    Analysis(failedCheck = unformatted)
+  }
+
+  private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(
+      implicit formatter: Formatter): Unit = {
+    trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
+      log.debug(outDiff.toString)
+      val updatedOrAdded = outDiff.modified & outDiff.checked
+      val filesToFormat: Set[File] = updatedOrAdded | prev.failedCheck
+      if (filesToFormat.nonEmpty) {
+        log.info(s"Formatting ${filesToFormat.size} Java source${plural(filesToFormat.size)}...")
+        formatSources(filesToFormat, log)
+      }
+      Analysis(Set.empty)
+    }
+  }
+
+  private def formatSources(sources: Set[File], log: Logger)(implicit formatter: Formatter): Unit = {
+    val cnt = withFormattedSources(sources.toList, log)((file, input, output) => {
+      if (input != output) {
+        IO.write(file, output)
+        1
+      } else {
+        0
+      }
+    }).flatten.sum
+    log.info(s"Reformatted $cnt Java source${plural(cnt)}")
+  }
+
+  private def trackSourcesViaCache(cacheStoreFactory: CacheStoreFactory, sources: Seq[File])(
+      f: (ChangeReport[File], Analysis) => Analysis): Analysis = {
+    val prevTracker = Tracked.lastOutput[Unit, Analysis](cacheStoreFactory.make("last")) { (_, prev0) =>
+      val prev = prev0.getOrElse(Analysis(Set.empty))
+      Tracked.diffOutputs(cacheStoreFactory.make("output-diff"), FileInfo.lastModified)(sources.toSet) {
+        (outDiff: ChangeReport[File]) =>
+          f(outDiff, prev)
+      }
+
+    }
+    prevTracker(())
+  }
+
+  private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(
+      implicit formatter: Formatter): Seq[Option[T]] = {
+    sources.map { file =>
+      val input = IO.read(file)
+      try {
+        val output = formatter.formatSource(input)
+        Some(onFormat(file, input, output))
+      } catch {
+        case e: Exception => Some(onFormat(file, input, input))
       }
     }
-
-    // TODO figure out how to make changes to the settings trigger a reformat
-    // Tried adding a file that the settings where written to, and include that in the cache,
-    // but it still didn't trigger a reformat after reload. BTW, it doesn't work for Scalariform either.
-    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toSet
-    val cache = streams.cacheDirectory / "java-formatter"
-    val logFun = log("%s(%s)".format(Reference.display(ref), configuration), streams.log) _
-    handleFiles(files, cache, logFun("Formatting %s %s ..."), performFormat)
-    handleFiles(files, cache, logFun("Reformatted %s %s."), _ => ()).toList // recalculate cache because we're formatting in-place
   }
 
-  def handleFiles(files: Set[File], cache: File, logFun: String => Unit, updateFun: Set[File] => Unit): Set[File] = {
-
-    def handleUpdate(in: ChangeReport[File], out: ChangeReport[File]) = {
-      val files = in.modified -- in.removed
-      Analysis.counted("Java source", "", "s", files.size).foreach(logFun)
-      updateFun(files)
-      files
-    }
-
-    FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists)(handleUpdate)(files)
-  }
 }
