@@ -1,5 +1,10 @@
 # compile should trigger formatting
-> compile
+-> javafmtCheck
+> javafmt
+-> javafmtCheckAll
+# make sure the caching works when files disappear
+> removeFile
+> javafmtAll
 
 #$ exec echo "====== FORMATTED ======"
 #$ exec cat src/main/java/com/lightbend/BadFormatting.java
@@ -9,3 +14,4 @@
 #$ exec echo "====== DIFF ======"
 $ exec diff       src/main/java/com/lightbend/BadFormatting.java        src/main/java-expected/com/lightbend/BadFormatting.java
 $ exec diff inner/src/main/java/com/lightbend/BadFormatting2.java inner/src/main/java-expected/com/lightbend/BadFormatting2.java
+$ exec diff inner/src/test/java/com/lightbend/BadFormatting3.java     inner/src/test/java-expected/com/lightbend/BadFormatting3.java
