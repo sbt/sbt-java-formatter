@@ -10,7 +10,6 @@ jobs:
      - stage: publish
        script:
         - sbt publish
-        - sbt ++2.10.7! publish
 
 stages:
   # runs on master commits and PRs
@@ -31,6 +30,8 @@ cache:
     - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.sbt/launchers
+    - $HOME/.jabba/jdk
 
 env:
   global:
