@@ -21,8 +21,6 @@ import sbt.Keys._
 import sbt.{ Def, _ }
 
 object AutomateJavaFormatterPlugin extends AutoPlugin {
-  override def trigger = allRequirements
-
   override def `requires` = plugins.JvmPlugin
 
   override def projectSettings =
