@@ -1,1 +1,1 @@
-// no settings needed
+lazy val root = (project in file(".")).enablePlugins(AutomateJavaFormatterPlugin)
