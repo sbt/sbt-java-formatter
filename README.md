@@ -26,6 +26,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * `javafmtCheck` fails if files need reformatting
 * `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
 
+This plugin required sbt 1.3.0+.
 
 Configuration
 -------------
