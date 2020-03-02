@@ -1,6 +1,10 @@
 sudo: false
 language: scala
-jdk: openjdk8
+
+matrix:
+  include:
+    - jdk: openjdk8
+    - jdk: openjdk11
 
 jobs:
   include:
