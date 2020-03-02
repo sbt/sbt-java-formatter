@@ -1,5 +1,5 @@
 # compile should trigger formatting
-> test:compile
+> compile
 
 #$ exec echo "====== FORMATTED ======"
 #$ exec cat src/main/java/com/lightbend/BadFormatting.java
