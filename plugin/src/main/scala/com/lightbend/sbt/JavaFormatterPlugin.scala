@@ -20,14 +20,13 @@ import com.lightbend.sbt.javaformatter.JavaFormatter
 import sbt.Keys._
 import sbt.{ Def, _ }
 
+@deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
-  override def `requires` = plugins.JvmPlugin
+  override def `requires` = plugins.JvmPlugin && JavaFormatterPlugin
 
-  override def projectSettings =
-    Seq(Compile, Test).flatMap(inConfig(_)(compile := compile.dependsOn(JavaFormatterPlugin.autoImport.javafmt).value))
-
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(JavaFormatterPlugin.autoImport.javafmtOnCompile := true)
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
@@ -41,6 +40,7 @@ object JavaFormatterPlugin extends AutoPlugin {
     val javafmtCheckAll: TaskKey[Unit] = taskKey(
       "Execute the javafmtCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
+    val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, on by default.")
   }
 
   import autoImport._
@@ -59,25 +59,41 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtCheckAll := javafmtCheck.?.all(anyConfigsInThisProject).value)
   }
 
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(javafmtOnCompile := false)
+
   def toBeScopedSettings: Seq[Setting[_]] =
-    List((javafmt / sourceDirectories) := List(javaSource.value), javafmt := {
-      val streamz = streams.value
-      val sD = (javafmt / sourceDirectories).value.toList
-      val iF = (javafmt / includeFilter).value
-      val eF = (javafmt / excludeFilter).value
-      val cache = streamz.cacheStoreFactory
-      JavaFormatter(sD, iF, eF, streamz, cache)
-    }, javafmtCheck := {
-      val streamz = streams.value
-      val baseDir = (ThisBuild / baseDirectory).value
-      val sD = (javafmt / sourceDirectories).value.toList
-      val iF = (javafmt / includeFilter).value
-      val eF = (javafmt / excludeFilter).value
-      val cache = (javafmt / streams).value.cacheStoreFactory
-      JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache)
-    })
+    List(
+      (javafmt / sourceDirectories) := List(javaSource.value),
+      javafmt := {
+        val streamz = streams.value
+        val sD = (javafmt / sourceDirectories).value.toList
+        val iF = (javafmt / includeFilter).value
+        val eF = (javafmt / excludeFilter).value
+        val cache = streamz.cacheStoreFactory
+        JavaFormatter(sD, iF, eF, streamz, cache)
+      },
+      javafmtCheck := {
+        val streamz = streams.value
+        val baseDir = (ThisBuild / baseDirectory).value
+        val sD = (javafmt / sourceDirectories).value.toList
+        val iF = (javafmt / includeFilter).value
+        val eF = (javafmt / excludeFilter).value
+        val cache = (javafmt / streams).value.cacheStoreFactory
+        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache)
+      },
+      javafmtDoFormatOnCompile := Def.settingDyn {
+          if (javafmtOnCompile.value) {
+            javafmt in resolvedScoped.value.scope
+          } else {
+            Def.task(())
+          }
+        }.value,
+      compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
   def notToBeScopedSettings: Seq[Setting[_]] =
     List(includeFilter in javafmt := "*.java")
+
+  private[this] val javafmtDoFormatOnCompile =
+    taskKey[Unit]("Format Java source files if javafmtOnCompile is on.")
 
 }
