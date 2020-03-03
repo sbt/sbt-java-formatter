@@ -20,7 +20,7 @@ import com.lightbend.sbt.javaformatter.JavaFormatter
 import sbt.Keys._
 import sbt.{ Def, _ }
 
-@deprecated("Use javafmtOnCompile setting instead", "0.5.0")
+@deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
   override def trigger = allRequirements
 
