@@ -26,7 +26,9 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * `javafmtCheck` fails if files need reformatting
 * `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
 
-This plugin required sbt 1.3.0+.
+* The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`true` by default as the `AutomateJavaFormatterPlugin` is triggered if not disabled explicitly).
+
+This plugin requires sbt 1.3.0+.
 
 Configuration
 -------------
@@ -39,7 +41,7 @@ If you decide you really need more flexibility, you could consider other plugins
 Contributing
 ------------
 
-Yes, we'll happily accept PRs to improve the plugin, but please note that the plugin is very rough around the edges.
+Yes, we'll happily accept PRs to improve the plugin. We expect you to adhere to the [Lightbend Community Code of Conduct](https://www.lightbend.com/conduct) and to sign the [Lightbend Contributor License Agreement - CLA](https://www.lightbend.com/contribute/cla).
 
 Take a look at the [contributors graph](https://github.com/sbt/sbt-java-formatter/graphs/contributors) if you want to contact
 any of the contributors directly.
