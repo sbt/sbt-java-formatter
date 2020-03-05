@@ -64,10 +64,8 @@ object JavaFormatter {
 
     import sjsonnew.{ :*:, LList, LNil }
 
-    implicit val analysisIso = LList.iso({ a: Analysis =>
-      ("failedCheck", a.failedCheck) :*: LNil
-    }, { in: (Set[File] :*: LNil) =>
-      Analysis(in.head)
+    implicit val analysisIso = LList.iso({ a: Analysis => ("failedCheck", a.failedCheck) :*: LNil }, {
+      in: (Set[File] :*: LNil) => Analysis(in.head)
     })
   }
 
@@ -78,9 +76,7 @@ object JavaFormatter {
       val updatedOrAdded = outDiff.modified & outDiff.checked
       val filesToCheck: Set[File] = updatedOrAdded
       val prevFailed: Set[File] = prev.failedCheck & outDiff.unmodified
-      prevFailed.foreach { file =>
-        warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log)
-      }
+      prevFailed.foreach { file => warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log) }
       val result = checkSources(baseDir, filesToCheck.toList, log)
       prev.copy(failedCheck = result.failedCheck | prevFailed)
     }
@@ -135,8 +131,7 @@ object JavaFormatter {
     val prevTracker = Tracked.lastOutput[Unit, Analysis](cacheStoreFactory.make("last")) { (_, prev0) =>
       val prev = prev0.getOrElse(Analysis(Set.empty))
       Tracked.diffOutputs(cacheStoreFactory.make("output-diff"), FileInfo.lastModified)(sources.toSet) {
-        (outDiff: ChangeReport[File]) =>
-          f(outDiff, prev)
+        (outDiff: ChangeReport[File]) => f(outDiff, prev)
       }
 
     }
