@@ -1,10 +1,8 @@
 sudo: false
 language: scala
 
-matrix:
-  include:
-    - jdk: openjdk8
-    - jdk: openjdk11
+before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
+install: jabba install "$TRAVIS_JDK" && jabba use "$_" && java -Xmx32m -version
 
 jobs:
   include:
@@ -35,9 +33,12 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
     - $HOME/.sbt/launchers
-    - $HOME/.jabba/jdk
+    - $HOME/.jabba
 
 env:
+  matrix:
+    - TRAVIS_JDK=adopt@1.8-0
+    - TRAVIS_JDK=adopt@1.11-0
   global:
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "i8q/3/RXpPLJ4MrUtk4jT5RtLTl0N8tKu3ny+mjhWs8bXafWwSkmbRkQuwKB/8vvvAjAFuDvYHsrnXBRnIUs4wenHxp+1FQDBCgnajpLcmTy7OTyMnIHOU8mboW+pxlk4LiSL4qnT7FYZ7NeYQr1kYmQ1y9IETiEFhi4m+kRzJUB7+fU0rDFTo1cMe2hzZ3iihYD8JZiGnFAW9yjFlZyWjahql4LE7qUSMCcQ6VnSE/wGT0wq5MNvlZWR5kLKDp4L1S1lz+S18HVBT5Mnj66RQS3CEsqNxQoqbIckRG//O2I/UV4BsYicZr6TG3G40G1PmEK5chD8M/IEKuwpgts2rQ9ZAtIqYry0ETrp/Vq3lPxWKj4A6AJ4d+hxH0M7v9IO79nCf8DupBHNqZAeFSbwk9eXvI/3LGM9w5TZMe5Pnrkcx/f79vbZo3X/pTX12tdWZxPRyf3kVn6oX4uHtGtDTjJvF1LAWgnRaFm3lVlJ0TW3o1gjtW/0xHww8lpPJvLnh4EjXqsJuX3MG4PBx5rswmYrQ9ZT97gCWD+hfZO+TnyMcFuDIHuZz1KYe9a4KM2ow23vRFXAy4M3lvh98xpz672wuddwvBao8eu/yeH2V+nI3BNqLaEuGxB4o3MaMoDWcNjBZ+EaMy5KhGl9yDu7VaeBv/z87i4cRsarz0Y9hg="
