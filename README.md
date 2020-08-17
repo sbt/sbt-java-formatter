@@ -26,6 +26,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
 
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`true` by default as the `AutomateJavaFormatterPlugin` is triggered if not disabled explicitly).
+* The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
 
 This plugin requires sbt 1.3.0+.
 

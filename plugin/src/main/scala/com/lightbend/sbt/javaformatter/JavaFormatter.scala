@@ -16,12 +16,11 @@
 
 package com.lightbend.sbt.javaformatter
 
-import com.google.googlejavaformat.java.Formatter
+import com.google.googlejavaformat.java.{ Formatter, JavaFormatterOptions }
 import sbt.Keys._
 import sbt._
 import sbt.util.CacheImplicits._
 import sbt.util.{ CacheStoreFactory, FileInfo, Logger }
-
 import scala.collection.immutable.Seq
 
 object JavaFormatter {
@@ -31,9 +30,10 @@ object JavaFormatter {
       includeFilter: FileFilter,
       excludeFilter: FileFilter,
       streams: TaskStreams,
-      cacheStoreFactory: CacheStoreFactory): Unit = {
+      cacheStoreFactory: CacheStoreFactory,
+      options: JavaFormatterOptions): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter)
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter(options))
   }
 
   def check(
@@ -42,9 +42,10 @@ object JavaFormatter {
       includeFilter: FileFilter,
       excludeFilter: FileFilter,
       streams: TaskStreams,
-      cacheStoreFactory: CacheStoreFactory): Boolean = {
+      cacheStoreFactory: CacheStoreFactory,
+      options: JavaFormatterOptions): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
-    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter)
+    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter(options))
     trueOrBoom(analysis)
   }
 
