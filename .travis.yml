@@ -9,7 +9,7 @@ jobs:
 
      - stage: publish
        script:
-        - sbt publish
+        - sbt publishSigned
 
 stages:
   # runs on master commits and PRs
