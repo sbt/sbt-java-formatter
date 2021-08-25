@@ -23,7 +23,5 @@ lazy val plugin = project
     },
     scriptedBufferLog := false,
     scalafmtOnCompile := true,
-    // don't do any API docs
-    doc / sources := Seq(),
-    packageDoc / publishArtifact := false)
+  )
   .enablePlugins(AutomateHeaderPlugin)
