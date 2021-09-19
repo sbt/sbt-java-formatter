@@ -1,10 +1,8 @@
-# [sbt-java-formatter][] [![scaladex-badge][]][scaladex] [![travis-badge][]][travis]
+# [sbt-java-formatter][] [![scaladex-badge][]][scaladex]
 
 [sbt-java-formatter]: https://github.com/sbt/sbt-java-formatter
 [scaladex]:           https://index.scala-lang.org/sbt/sbt-java-formatter
 [scaladex-badge]:     https://index.scala-lang.org/sbt/sbt-java-formatter/latest.svg
-[travis]:             https://travis-ci.com/github/sbt/sbt-java-formatter
-[travis-badge]:       https://travis-ci.com/sbt/sbt-java-formatter.svg?branch=master
 
 An sbt plugin for formatting Java code. This plugin began as a combination of ideas from this
 [blog post](https://ssscripting.wordpress.com/2009/06/10/how-to-use-the-eclipse-code-formatter-from-your-code/)
