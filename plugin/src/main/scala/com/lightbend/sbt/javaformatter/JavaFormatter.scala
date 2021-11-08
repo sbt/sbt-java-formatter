@@ -65,9 +65,11 @@ object JavaFormatter {
 
     import sjsonnew.{ :*:, LList, LNil }
 
-    implicit val analysisIso = LList.iso({ a: Analysis => ("failedCheck", a.failedCheck) :*: LNil }, {
-      in: (Set[File] :*: LNil) => Analysis(in.head)
-    })
+    implicit val analysisIso = LList.iso(
+      { a: Analysis => ("failedCheck", a.failedCheck) :*: LNil },
+      { in: (Set[File] :*: LNil) =>
+        Analysis(in.head)
+      })
   }
 
   private def cachedCheckSources(cacheStoreFactory: CacheStoreFactory, baseDir: File, sources: Seq[File], log: Logger)(
@@ -101,8 +103,8 @@ object JavaFormatter {
     Analysis(failedCheck = unformatted)
   }
 
-  private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(
-      implicit formatter: Formatter): Unit = {
+  private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(implicit
+      formatter: Formatter): Unit = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
@@ -139,8 +141,8 @@ object JavaFormatter {
     prevTracker(())
   }
 
-  private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(
-      implicit formatter: Formatter): Seq[Option[T]] = {
+  private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(implicit
+      formatter: Formatter): Seq[Option[T]] = {
     sources.map { file =>
       val input = IO.read(file)
       try {

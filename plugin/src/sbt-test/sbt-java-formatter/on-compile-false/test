@@ -1,4 +1,4 @@
-# compile should trigger formatting
+# compile should not trigger formatting
 > compile
 
 #$ exec echo "====== FORMATTED ======"

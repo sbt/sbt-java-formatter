@@ -91,12 +91,12 @@ object JavaFormatterPlugin extends AutoPlugin {
         JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
-          if (javafmtOnCompile.value) {
-            javafmt in resolvedScoped.value.scope
-          } else {
-            Def.task(())
-          }
-        }.value,
+        if (javafmtOnCompile.value) {
+          javafmt in resolvedScoped.value.scope
+        } else {
+          Def.task(())
+        }
+      }.value,
       compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
   def notToBeScopedSettings: Seq[Setting[_]] =
