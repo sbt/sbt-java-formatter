@@ -18,12 +18,12 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % --latest version---)
 
 For available versions see [releases](https://github.com/sbt/sbt-java-formatter/releases).
 
-* `javafmt` formats Java files (done automatically on `compile` for `Compile` and `Test` configurations, unless `javafmtOnCompile := false` is set)
+* `javafmt` formats Java files
 * `javafmtAll` formats Java files for all configurations (`Compile` and `Test` by default)
 * `javafmtCheck` fails if files need reformatting
 * `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
 
-* The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`true` by default as the `AutomateJavaFormatterPlugin` is triggered if not disabled explicitly).
+* The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
 
 This plugin requires sbt 1.3.0+.
