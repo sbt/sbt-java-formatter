@@ -27,7 +27,7 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
 
   override def `requires` = plugins.JvmPlugin && JavaFormatterPlugin
 
-  override def globalSettings: Seq[Def.Setting[_]] = Seq(JavaFormatterPlugin.autoImport.javafmtOnCompile := true)
+  override def globalSettings: Seq[Def.Setting[_]] = Seq(JavaFormatterPlugin.autoImport.javafmtOnCompile := false)
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
@@ -41,7 +41,7 @@ object JavaFormatterPlugin extends AutoPlugin {
     val javafmtCheckAll: TaskKey[Unit] = taskKey(
       "Execute the javafmtCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
-    val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, on by default.")
+    val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, off by default.")
     val javafmtStyle =
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
     val javafmtOptions = settingKey[JavaFormatterOptions](
@@ -91,12 +91,12 @@ object JavaFormatterPlugin extends AutoPlugin {
         JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
-          if (javafmtOnCompile.value) {
-            javafmt in resolvedScoped.value.scope
-          } else {
-            Def.task(())
-          }
-        }.value,
+        if (javafmtOnCompile.value) {
+          javafmt in resolvedScoped.value.scope
+        } else {
+          Def.task(())
+        }
+      }.value,
       compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
   def notToBeScopedSettings: Seq[Setting[_]] =
