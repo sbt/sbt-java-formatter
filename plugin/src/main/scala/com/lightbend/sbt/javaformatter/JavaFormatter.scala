@@ -146,7 +146,7 @@ object JavaFormatter {
     sources.map { file =>
       val input = IO.read(file)
       try {
-        val output = formatter.formatSource(input)
+        val output = formatter.formatSourceAndFixImports(input)
         Some(onFormat(file, input, output))
       } catch {
         case e: Exception => Some(onFormat(file, input, input))
