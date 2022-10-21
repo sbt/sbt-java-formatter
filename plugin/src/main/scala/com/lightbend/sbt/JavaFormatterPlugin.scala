@@ -100,7 +100,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
   def notToBeScopedSettings: Seq[Setting[_]] =
-    List(includeFilter in javafmt := "*.java")
+    List(javafmt / includeFilter := "*.java")
 
   private[this] val javafmtDoFormatOnCompile =
     taskKey[Unit]("Format Java source files if javafmtOnCompile is on.")
