@@ -1,4 +1,4 @@
-lazy val sbtJavaFormatter = project.in(file(".")).aggregate(plugin).settings(skip in publish := true)
+lazy val sbtJavaFormatter = project.in(file(".")).aggregate(plugin).settings(publish / skip := true)
 
 lazy val plugin = project
   .in(file("plugin"))
