@@ -67,7 +67,7 @@ object JavaFormatter {
 
     implicit val analysisIso = LList.iso(
       { a: Analysis => ("failedCheck", a.failedCheck) :*: LNil },
-      { in: (Set[File] :*: LNil) =>
+      { in: Set[File] :*: LNil =>
         Analysis(in.head)
       })
   }

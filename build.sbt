@@ -9,8 +9,10 @@ lazy val plugin = project
     organizationHomepage := Some(url("https://lightbend.com")),
     name := "sbt-java-formatter",
     homepage := scmInfo.value.map(_.browseUrl),
-    scmInfo := Some(ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
-    developers := List(Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
+    developers := List(
+      Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
     libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.7"),
     startYear := Some(2015),
     description := "Formats Java code in your project.",
@@ -24,6 +26,5 @@ lazy val plugin = project
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
     scriptedBufferLog := false,
-    scalafmtOnCompile := true,
-  )
+    scalafmtOnCompile := true)
   .enablePlugins(AutomateHeaderPlugin)
