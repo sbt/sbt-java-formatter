@@ -16,7 +16,7 @@ lazy val plugin = project
       ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
     developers := List(
       Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
-    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.7"),
+    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"),
     startYear := Some(2015),
     description := "Formats Java code in your project.",
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
