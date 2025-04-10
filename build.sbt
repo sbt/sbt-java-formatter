@@ -1,4 +1,4 @@
-lazy val scala212 = "2.12.15"
+lazy val scala212 = "2.12.18"
 lazy val scala3 = "3.6.4"
 ThisBuild / scalaVersion := scala212
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
