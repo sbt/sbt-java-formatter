@@ -20,7 +20,15 @@ import _root_.sbt.Keys._
 import _root_.sbt._
 import _root_.sbt.util.CacheImplicits._
 import _root_.sbt.util.{ CacheStoreFactory, FileInfo, Logger }
-import com.palantir.javaformat.java.{ Formatter, JavaFormatterOptions }
+import com.google.googlejavaformat.java.{
+  Formatter => GoogleFormatter,
+  JavaFormatterOptions => GoogleJavaFormatterOptions
+}
+import com.palantir.javaformat.java.{
+  Formatter => PalantirFormatter,
+  JavaFormatterOptions => PalantirJavaFormatterOptions
+}
+
 import scala.collection.immutable.Seq
 
 object JavaFormatter {
@@ -31,9 +39,14 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Unit = {
+      formatter: Formatter,
+      options: GoogleJavaFormatterOptions,
+      palantirOptions: PalantirJavaFormatterOptions): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(Formatter.createFormatter(options))
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(
+      formatter,
+      new GoogleFormatter(options),
+      PalantirFormatter.createFormatter(palantirOptions))
   }
 
   def check(
@@ -43,10 +56,15 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Boolean = {
+      formatter: Formatter,
+      options: GoogleJavaFormatterOptions,
+      palantirOptions: PalantirJavaFormatterOptions): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     val analysis =
-      cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(Formatter.createFormatter(options))
+      cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(
+        formatter,
+        new GoogleFormatter(options),
+        PalantirFormatter.createFormatter(palantirOptions))
     trueOrBoom(analysis)
   }
 
@@ -74,7 +92,10 @@ object JavaFormatter {
   }
 
   private def cachedCheckSources(cacheStoreFactory: CacheStoreFactory, baseDir: File, sources: Seq[File], log: Logger)(
-      implicit formatter: Formatter): Analysis = {
+      implicit
+      formatter: Formatter,
+      googleFormatter: GoogleFormatter,
+      palantirFormatter: PalantirFormatter): Analysis = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
@@ -90,7 +111,10 @@ object JavaFormatter {
     log.warn(s"${file.toString} isn't formatted properly!")
   }
 
-  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit formatter: Formatter): Analysis = {
+  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit
+      formatter: Formatter,
+      googleFormatter: GoogleFormatter,
+      palantirFormatter: PalantirFormatter): Analysis = {
     if (sources.nonEmpty) {
       log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
     }
@@ -105,7 +129,9 @@ object JavaFormatter {
   }
 
   private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(implicit
-      formatter: Formatter): Unit = {
+      formatter: Formatter,
+      googleFormatter: GoogleFormatter,
+      palantirFormatter: PalantirFormatter): Unit = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
@@ -118,7 +144,10 @@ object JavaFormatter {
     }
   }
 
-  private def formatSources(sources: Set[File], log: Logger)(implicit formatter: Formatter): Unit = {
+  private def formatSources(sources: Set[File], log: Logger)(implicit
+      formatter: Formatter,
+      googleFormatter: GoogleFormatter,
+      palantirFormatter: PalantirFormatter): Unit = {
     val cnt = withFormattedSources(sources.toList, log)((file, input, output) => {
       if (input != output) {
         IO.write(file, output)
@@ -143,11 +172,16 @@ object JavaFormatter {
   }
 
   private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(implicit
-      formatter: Formatter): Seq[Option[T]] = {
+      formatter: Formatter,
+      googleFormatter: GoogleFormatter,
+      palantirFormatter: PalantirFormatter): Seq[Option[T]] = {
     sources.map { file =>
       val input = IO.read(file)
       try {
-        val output = formatter.formatSourceAndFixImports(input)
+        val output = formatter match {
+          case Formatter.PALANTIR => palantirFormatter.formatSourceAndFixImports(input)
+          case _                  => googleFormatter.formatSourceAndFixImports(input)
+        }
         Some(onFormat(file, input, output))
       } catch {
         case e: Exception => Some(onFormat(file, input, input))

@@ -1,5 +1,5 @@
-import com.palantir.javaformat.java.JavaFormatterOptions
+import com.github.sbt.javaformatter.Formatter
 // no settings needed
 
-ThisBuild / javafmtStyle := JavaFormatterOptions.Style.PALANTIR
+ThisBuild / javafmtFormatter := Formatter.PALANTIR
 ThisBuild / javafmtOnCompile := true

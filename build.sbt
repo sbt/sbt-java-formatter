@@ -17,7 +17,7 @@ lazy val plugin = project
     developers := List(
       Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
     libraryDependencies ++= Seq(
-//      "com.google.googlejavaformat" % "google-java-format" % "1.24.0",
+      "com.google.googlejavaformat" % "google-java-format" % "1.24.0",
       "com.palantir.javaformat" % "palantir-java-format" % "2.62.0"
     ),
     startYear := Some(2015),
