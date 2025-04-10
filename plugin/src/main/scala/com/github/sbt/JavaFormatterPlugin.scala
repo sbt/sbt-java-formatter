@@ -18,8 +18,9 @@ package com.github.sbt
 
 import _root_.sbt.Keys._
 import _root_.sbt.{ Def, _ }
+import com.github.sbt.javaformatter.{ Formatter, JavaFormatter }
 import com.google.googlejavaformat.java.JavaFormatterOptions
-import com.github.sbt.javaformatter.JavaFormatter
+import com.palantir.javaformat.java.{ JavaFormatterOptions => PalantirJavaFormatterOptions }
 
 @deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
@@ -42,9 +43,14 @@ object JavaFormatterPlugin extends AutoPlugin {
       "Execute the javafmtCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
     val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, off by default.")
+    val javafmtFormatter = settingKey[Formatter]("Define formatter, Google (default) or Palantir")
     val javafmtStyle =
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
     val javafmtOptions = settingKey[JavaFormatterOptions](
+      "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
+    val javafmtPalantirStyle =
+      settingKey[PalantirJavaFormatterOptions.Style]("Define formatting style, Palantir (default) or Google or AOSP")
+    val javafmtPalantirOptions = settingKey[PalantirJavaFormatterOptions](
       "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
   }
 
@@ -69,20 +75,27 @@ object JavaFormatterPlugin extends AutoPlugin {
   }
 
   override def globalSettings: Seq[Def.Setting[?]] =
-    Seq(javafmtOnCompile := false, javafmtStyle := JavaFormatterOptions.Style.GOOGLE)
+    Seq(
+      javafmtOnCompile := false,
+      javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
+      javafmtFormatter := Formatter.GOOGLE,
+      javafmtPalantirStyle := PalantirJavaFormatterOptions.Style.PALANTIR)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
       (javafmt / sourceDirectories) := List(javaSource.value),
       javafmtOptions := JavaFormatterOptions.builder().style(javafmtStyle.value).build(),
+      javafmtPalantirOptions := PalantirJavaFormatterOptions.builder().style(javafmtPalantirStyle.value).build(),
       javafmt := {
         val streamz = streams.value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
+        val formatter = javafmtFormatter.value
         val options = javafmtOptions.value
-        JavaFormatter(sD, iF, eF, streamz, cache, options)
+        val palantirOptions = javafmtPalantirOptions.value
+        JavaFormatter(sD, iF, eF, streamz, cache, formatter, options, palantirOptions)
       },
       javafmtCheck := {
         val streamz = streams.value
@@ -91,8 +104,10 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
+        val formatter = javafmtFormatter.value
         val options = javafmtOptions.value
-        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options)
+        val palantirOptions = javafmtPalantirOptions.value
+        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, formatter, options, palantirOptions)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {
