@@ -1,12 +1,15 @@
+lazy val scala212 = "2.12.15"
+lazy val scala3 = "3.6.4"
+ThisBuild / scalaVersion := scala212
+ThisBuild / crossScalaVersions := Seq(scala212, scala3)
+
 lazy val sbtJavaFormatter = project.in(file(".")).aggregate(plugin).settings(publish / skip := true)
 
 lazy val plugin = project
   .in(file("plugin"))
   .enablePlugins(SbtPlugin)
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(
-    organization := "com.lightbend.sbt",
-    organizationName := "Lightbend Inc.",
-    organizationHomepage := Some(url("https://lightbend.com")),
     name := "sbt-java-formatter",
     homepage := scmInfo.value.map(_.browseUrl),
     scmInfo := Some(
@@ -18,13 +21,32 @@ lazy val plugin = project
     description := "Formats Java code in your project.",
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     publishTo := Some(if (isSnapshot.value) Opts.resolver.sonatypeSnapshots else Opts.resolver.sonatypeStaging),
-    crossSbtVersions := List("1.3.0"),
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature"),
+    (pluginCrossBuild / sbtVersion) := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.5.8"
+        case _      => "2.0.0-M4"
+      }
+    },
+    scalacOptions ++= {
+      Vector("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature") ++ (scalaBinaryVersion.value match {
+        case "2.12" => Vector("-Xsource:3")
+        case _      => Vector("-Wconf:error")
+      })
+    },
     javacOptions ++= Seq("-encoding", "UTF-8"),
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
     scriptedBufferLog := false,
-    scalafmtOnCompile := true)
-  .enablePlugins(AutomateHeaderPlugin)
+    scalafmtOnCompile := true
+  )
+
+ThisBuild / organization := "com.github.sbt"
+ThisBuild / organizationName := "sbt community"
+ThisBuild / dynverSonatypeSnapshots := true
+ThisBuild / version := {
+  val orig = (ThisBuild / version).value
+  if (orig.endsWith("-SNAPSHOT")) "0.9.0-SNAPSHOT"
+  else orig
+}

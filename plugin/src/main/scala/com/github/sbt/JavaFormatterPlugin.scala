@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Lightbend Inc.
+ * Copyright 2015 sbt community
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.lightbend.sbt
+package com.github.sbt
 
+import _root_.sbt.Keys._
+import _root_.sbt.{ Def, _ }
 import com.google.googlejavaformat.java.JavaFormatterOptions
-import com.lightbend.sbt.javaformatter.JavaFormatter
-import sbt.Keys._
-import sbt.{ Def, _ }
+import com.github.sbt.javaformatter.JavaFormatter
 
 @deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
@@ -27,7 +27,7 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
 
   override def `requires` = plugins.JvmPlugin && JavaFormatterPlugin
 
-  override def globalSettings: Seq[Def.Setting[_]] = Seq(JavaFormatterPlugin.autoImport.javafmtOnCompile := false)
+  override def globalSettings: Seq[Def.Setting[?]] = Seq(JavaFormatterPlugin.autoImport.javafmtOnCompile := false)
 }
 
 object JavaFormatterPlugin extends AutoPlugin {
@@ -54,20 +54,24 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   override def `requires` = plugins.JvmPlugin
 
-  override def projectSettings: Seq[Def.Setting[_]] = {
+  override def projectSettings: Seq[Def.Setting[?]] = {
     val anyConfigsInThisProject = ScopeFilter(configurations = inAnyConfiguration)
 
     notToBeScopedSettings ++
     Seq(Compile, Test).flatMap(inConfig(_)(toBeScopedSettings)) ++
     Seq(
-      javafmtAll := javafmt.?.all(anyConfigsInThisProject).value,
-      javafmtCheckAll := javafmtCheck.?.all(anyConfigsInThisProject).value)
+      javafmtAll := {
+        val _ = javafmt.?.all(anyConfigsInThisProject).value
+      },
+      javafmtCheckAll := {
+        val _ = javafmtCheck.?.all(anyConfigsInThisProject).value
+      })
   }
 
-  override def globalSettings: Seq[Def.Setting[_]] =
+  override def globalSettings: Seq[Def.Setting[?]] =
     Seq(javafmtOnCompile := false, javafmtStyle := JavaFormatterOptions.Style.GOOGLE)
 
-  def toBeScopedSettings: Seq[Setting[_]] =
+  def toBeScopedSettings: Seq[Setting[?]] =
     List(
       (javafmt / sourceDirectories) := List(javaSource.value),
       javafmtOptions := JavaFormatterOptions.builder().style(javafmtStyle.value).build(),
@@ -92,17 +96,17 @@ object JavaFormatterPlugin extends AutoPlugin {
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {
-          javafmt in resolvedScoped.value.scope
+          resolvedScoped.value.scope / javafmt
         } else {
           Def.task(())
         }
       }.value,
       compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
-  def notToBeScopedSettings: Seq[Setting[_]] =
+  def notToBeScopedSettings: Seq[Setting[?]] =
     List(javafmt / includeFilter := "*.java")
 
-  private[this] val javafmtDoFormatOnCompile =
+  private val javafmtDoFormatOnCompile =
     taskKey[Unit]("Format Java source files if javafmtOnCompile is on.")
 
 }
