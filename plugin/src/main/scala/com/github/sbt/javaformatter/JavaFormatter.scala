@@ -20,7 +20,7 @@ import _root_.sbt.Keys._
 import _root_.sbt._
 import _root_.sbt.util.CacheImplicits._
 import _root_.sbt.util.{ CacheStoreFactory, FileInfo, Logger }
-import com.google.googlejavaformat.java.{ Formatter, JavaFormatterOptions }
+import com.palantir.javaformat.java.{ Formatter, JavaFormatterOptions }
 import scala.collection.immutable.Seq
 
 object JavaFormatter {
@@ -33,7 +33,7 @@ object JavaFormatter {
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter(options))
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(Formatter.createFormatter(options))
   }
 
   def check(
@@ -45,7 +45,8 @@ object JavaFormatter {
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter(options))
+    val analysis =
+      cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(Formatter.createFormatter(options))
     trueOrBoom(analysis)
   }
 

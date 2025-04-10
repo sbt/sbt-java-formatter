@@ -18,8 +18,8 @@ package com.github.sbt
 
 import _root_.sbt.Keys._
 import _root_.sbt.{ Def, _ }
-import com.google.googlejavaformat.java.JavaFormatterOptions
 import com.github.sbt.javaformatter.JavaFormatter
+import com.palantir.javaformat.java.JavaFormatterOptions
 
 @deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
