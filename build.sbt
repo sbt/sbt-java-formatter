@@ -39,8 +39,7 @@ lazy val plugin = project
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
     scriptedBufferLog := false,
-    scalafmtOnCompile := true
-  )
+    scalafmtOnCompile := true)
 
 ThisBuild / organization := "com.github.sbt"
 ThisBuild / organizationName := "sbt community"
