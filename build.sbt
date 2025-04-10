@@ -51,7 +51,7 @@ lazy val plugin = project
   .settings(commonSettings *)
   .settings(
     name := "sbt-java-formatter",
-    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"))
+    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.26.0"))
 
 lazy val `plugin-add-opens` = project
   .in(file("plugin-add-opens"))
