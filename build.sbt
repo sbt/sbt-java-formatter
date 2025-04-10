@@ -1,4 +1,4 @@
-lazy val scala212 = "2.12.18"
+lazy val scala212 = "2.12.20"
 lazy val scala3 = "3.6.4"
 ThisBuild / scalaVersion := scala212
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
@@ -22,7 +22,7 @@ lazy val plugin = project
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
-        case "2.12" => "1.9.0"
+        case "2.12" => "1.10.11"
         case _      => "2.0.0-M4"
       }
     },
