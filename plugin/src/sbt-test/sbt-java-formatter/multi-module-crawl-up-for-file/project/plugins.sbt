@@ -1,1 +1,1 @@
-addSbtPlugin("com.lightbend.sbt"  % "sbt-java-formatter" % System.getProperty("plugin.version"))
+addSbtPlugin("com.github.sbt"  % "sbt-java-formatter" % System.getProperty("plugin.version"))

@@ -13,7 +13,7 @@ and this [maven plugin](https://github.com/revelc/formatter-maven-plugin), thoug
 Add the plugin to `project/plugins.sbt`:
 
 ```scala
-addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % --latest version---)
+addSbtPlugin("com.github.sbt" % "sbt-java-formatter" % --latest version---)
 ```
 
 For available versions see [releases](https://github.com/sbt/sbt-java-formatter/releases).
@@ -45,7 +45,7 @@ If you decide you really need more flexibility, you could consider other plugins
 
 # Contributing
 
-Yes, we'll happily accept PRs to improve the plugin. We expect you to adhere to the [Lightbend Community Code of Conduct](https://www.lightbend.com/conduct) and to sign the [Lightbend Contributor License Agreement - CLA](https://www.lightbend.com/contribute/cla).
+Yes, we'll happily accept PRs to improve the plugin.
 
 Take a look at the [contributors graph](https://github.com/sbt/sbt-java-formatter/graphs/contributors) if you want to contact
 any of the contributors directly.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Lightbend Inc.
+ * Copyright 2015 sbt community
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.lightbend.sbt.javaformatter
+package com.github.sbt.javaformatter
 
+import _root_.sbt.Keys._
+import _root_.sbt._
+import _root_.sbt.util.CacheImplicits._
+import _root_.sbt.util.{ CacheStoreFactory, FileInfo, Logger }
 import com.google.googlejavaformat.java.{ Formatter, JavaFormatterOptions }
-import sbt.Keys._
-import sbt._
-import sbt.util.CacheImplicits._
-import sbt.util.{ CacheStoreFactory, FileInfo, Logger }
 import scala.collection.immutable.Seq
 
 object JavaFormatter {
@@ -32,7 +32,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Unit = {
-    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter(options))
   }
 
@@ -44,7 +44,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Boolean = {
-    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get.toList
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter(options))
     trueOrBoom(analysis)
   }
@@ -65,9 +65,9 @@ object JavaFormatter {
 
     import sjsonnew.{ :*:, LList, LNil }
 
-    implicit val analysisIso = LList.iso(
-      { a: Analysis => ("failedCheck", a.failedCheck) :*: LNil },
-      { in: Set[File] :*: LNil =>
+    implicit val analysisIso: sjsonnew.IsoLList.Aux[Analysis, Set[File] :*: LNil] = LList.iso(
+      { (a: Analysis) => ("failedCheck", a.failedCheck) :*: LNil },
+      { (in: Set[File] :*: LNil) =>
         Analysis(in.head)
       })
   }
