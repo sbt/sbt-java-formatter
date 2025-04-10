@@ -12,11 +12,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            java: 11
+            java: 17
             distribution: zulu
             jobtype: 1
           - os: ubuntu-latest
-            java: 11
+            java: 17
             distribution: zulu
             jobtype: 2
     runs-on: ${{ matrix.os }}
