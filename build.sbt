@@ -42,9 +42,3 @@ lazy val plugin = project
 
 ThisBuild / organization := "com.github.sbt"
 ThisBuild / organizationName := "sbt community"
-ThisBuild / dynverSonatypeSnapshots := true
-ThisBuild / version := {
-  val orig = (ThisBuild / version).value
-  if (orig.endsWith("-SNAPSHOT")) "0.9.0-SNAPSHOT"
-  else orig
-}
