@@ -33,7 +33,7 @@ object JavaFormatter {
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(new Formatter(options))
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(using new Formatter(options))
   }
 
   def check(
@@ -45,7 +45,7 @@ object JavaFormatter {
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(new Formatter(options))
+    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(using new Formatter(options))
     trueOrBoom(analysis)
   }
 
