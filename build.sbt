@@ -1,4 +1,4 @@
-lazy val scala212 = "2.12.18"
+lazy val scala212 = "2.12.20"
 lazy val scala3 = "3.6.4"
 ThisBuild / scalaVersion := scala212
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
@@ -16,13 +16,13 @@ lazy val plugin = project
       ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
     developers := List(
       Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
-    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"),
+    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.26.0"),
     startYear := Some(2015),
     description := "Formats Java code in your project.",
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
-        case "2.12" => "1.9.0"
+        case "2.12" => "1.10.11"
         case _      => "2.0.0-M4"
       }
     },
