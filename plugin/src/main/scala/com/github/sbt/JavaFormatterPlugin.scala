@@ -33,11 +33,15 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
 object JavaFormatterPlugin extends AutoPlugin {
 
   object autoImport {
+    @transient
     val javafmt: TaskKey[Unit] = taskKey("Format Java sources")
+    @transient
     val javafmtCheck: TaskKey[Boolean] = taskKey("Fail, if a Java source needs reformatting.")
+    @transient
     val javafmtAll: TaskKey[Unit] = taskKey(
       "Execute the javafmt task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
+    @transient
     val javafmtCheckAll: TaskKey[Unit] = taskKey(
       "Execute the javafmtCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
@@ -106,6 +110,7 @@ object JavaFormatterPlugin extends AutoPlugin {
   def notToBeScopedSettings: Seq[Setting[?]] =
     List(javafmt / includeFilter := "*.java")
 
+  @transient
   private val javafmtDoFormatOnCompile =
     taskKey[Unit]("Format Java source files if javafmtOnCompile is on.")
 
