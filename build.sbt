@@ -1,5 +1,5 @@
 lazy val scala212 = "2.12.18"
-lazy val scala3 = "3.7.3"
+lazy val scala3 = "3.8.1"
 ThisBuild / scalaVersion := scala212
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
 
@@ -23,12 +23,12 @@ lazy val plugin = project
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
         case "2.12" => "1.9.0"
-        case _      => "2.0.0-RC6"
+        case _      => "2.0.0-RC9"
       }
     },
     scalacOptions ++= {
       Vector("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature") ++ (scalaBinaryVersion.value match {
-        case "2.12" => Vector("-Xsource:3")
+        case "2.12" => Vector("-Xsource:3", "-release:11")
         case _      => Vector("-Wconf:error")
       })
     },
@@ -36,6 +36,15 @@ lazy val plugin = project
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedLaunchOpts ++= {
+      if (scala.util.Properties.isJavaAtLeast("17")) {
+        Seq("api", "file", "parser", "tree", "util").map { x =>
+          s"--add-opens=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
+        }
+      } else {
+        Nil
+      }
     },
     scriptedBufferLog := false,
     scalafmtOnCompile := true)
