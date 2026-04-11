@@ -39,8 +39,8 @@ lazy val plugin = project
     },
     scriptedLaunchOpts ++= {
       if (scala.util.Properties.isJavaAtLeast("17")) {
-        Seq("api", "file", "parser", "tree", "util").map { x =>
-          s"--add-opens=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
+        Seq("api", "code", "file", "parser", "tree", "util").map { x =>
+          s"--add-exports=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
         }
       } else {
         Nil
