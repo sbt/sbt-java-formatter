@@ -19,7 +19,7 @@ package com.github.sbt
 import _root_.sbt.Keys._
 import _root_.sbt.{ Def, _ }
 import com.google.googlejavaformat.java.JavaFormatterOptions
-import com.github.sbt.javaformatter.JavaFormatter
+import com.github.sbt.javaformatter.{ JavaFormatter, OtherOptions }
 
 @deprecated("Use javafmtOnCompile setting instead", "0.5.1")
 object AutomateJavaFormatterPlugin extends AutoPlugin {
@@ -50,6 +50,8 @@ object JavaFormatterPlugin extends AutoPlugin {
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
     val javafmtOptions = settingKey[JavaFormatterOptions](
       "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
+    val javafmtSortImports = settingKey[Boolean]("Whether to sort imports. Default: yes.")
+    val javafmtRemoveUnusedImports = settingKey[Boolean]("Whether to remove unused imports. Default: yes.")
   }
 
   import autoImport._
@@ -73,7 +75,11 @@ object JavaFormatterPlugin extends AutoPlugin {
   }
 
   override def globalSettings: Seq[Def.Setting[?]] =
-    Seq(javafmtOnCompile := false, javafmtStyle := JavaFormatterOptions.Style.GOOGLE)
+    Seq(
+      javafmtOnCompile := false,
+      javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
+      javafmtSortImports := true,
+      javafmtRemoveUnusedImports := true)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
@@ -86,7 +92,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
         val options = javafmtOptions.value
-        JavaFormatter(sD, iF, eF, streamz, cache, options)
+        val otherOptions = OtherOptions(javafmtSortImports.value, javafmtRemoveUnusedImports.value, javafmtStyle.value)
+        JavaFormatter(sD, iF, eF, streamz, cache, options, otherOptions)
       },
       javafmtCheck := {
         val streamz = streams.value
@@ -96,7 +103,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
         val options = javafmtOptions.value
-        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options)
+        val otherOptions = OtherOptions(javafmtSortImports.value, javafmtRemoveUnusedImports.value, javafmtStyle.value)
+        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options, otherOptions)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {

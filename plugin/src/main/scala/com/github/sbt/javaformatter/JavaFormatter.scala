@@ -20,8 +20,15 @@ import _root_.sbt.Keys._
 import _root_.sbt._
 import _root_.sbt.util.CacheImplicits._
 import _root_.sbt.util.{ CacheStoreFactory, FileInfo, Logger }
-import com.google.googlejavaformat.java.{ Formatter, JavaFormatterOptions }
+import com.google.googlejavaformat.java.{ Formatter, ImportOrderer, JavaFormatterOptions, RemoveUnusedImports }
+import com.google.googlejavaformat.java.JavaFormatterOptions.Style
 import scala.collection.immutable.Seq
+
+/**
+ * Other options, that upstream are passed around as CommandLineOptions, but that type is package-private so not usable
+ * as-is
+ */
+case class OtherOptions(sortImports: Boolean, removeUnusedImports: Boolean, style: Style)
 
 object JavaFormatter {
 
@@ -31,9 +38,10 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Unit = {
+      options: JavaFormatterOptions,
+      otherOptions: OtherOptions): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(using new Formatter(options))
+    cachedFormatSources(cacheStoreFactory, files, streams.log)(using new Formatter(options), otherOptions)
   }
 
   def check(
@@ -43,9 +51,11 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Boolean = {
+      options: JavaFormatterOptions,
+      otherOptions: OtherOptions): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(using new Formatter(options))
+    val analysis =
+      cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(using new Formatter(options), otherOptions)
     trueOrBoom(analysis)
   }
 
@@ -73,7 +83,9 @@ object JavaFormatter {
   }
 
   private def cachedCheckSources(cacheStoreFactory: CacheStoreFactory, baseDir: File, sources: Seq[File], log: Logger)(
-      implicit formatter: Formatter): Analysis = {
+      implicit
+      formatter: Formatter,
+      otherOptions: OtherOptions): Analysis = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
@@ -89,7 +101,9 @@ object JavaFormatter {
     log.warn(s"${file.toString} isn't formatted properly!")
   }
 
-  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit formatter: Formatter): Analysis = {
+  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit
+      formatter: Formatter,
+      otherOptions: OtherOptions): Analysis = {
     if (sources.nonEmpty) {
       log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
     }
@@ -104,7 +118,8 @@ object JavaFormatter {
   }
 
   private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(implicit
-      formatter: Formatter): Unit = {
+      formatter: Formatter,
+      otherOptions: OtherOptions): Unit = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
@@ -117,7 +132,9 @@ object JavaFormatter {
     }
   }
 
-  private def formatSources(sources: Set[File], log: Logger)(implicit formatter: Formatter): Unit = {
+  private def formatSources(sources: Set[File], log: Logger)(implicit
+      formatter: Formatter,
+      otherOptions: OtherOptions): Unit = {
     val cnt = withFormattedSources(sources.toList, log)((file, input, output) => {
       if (input != output) {
         IO.write(file, output)
@@ -141,12 +158,27 @@ object JavaFormatter {
     prevTracker(())
   }
 
+  private def fixImports(input: String)(implicit parameters: OtherOptions): String = {
+    if (parameters.removeUnusedImports) {
+      if (parameters.sortImports) {
+        return ImportOrderer.reorderImports(RemoveUnusedImports.removeUnusedImports(input), parameters.style)
+      } else {
+        return RemoveUnusedImports.removeUnusedImports(input);
+      }
+    } else if (parameters.sortImports) {
+      return ImportOrderer.reorderImports(input, parameters.style);
+    } else {
+      return input;
+    }
+  }
+
   private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(implicit
-      formatter: Formatter): Seq[Option[T]] = {
+      formatter: Formatter,
+      otherOptions: OtherOptions): Seq[Option[T]] = {
     sources.map { file =>
       val input = IO.read(file)
       try {
-        val output = formatter.formatSourceAndFixImports(input)
+        val output = fixImports(formatter.formatSource(input))
         Some(onFormat(file, input, output))
       } catch {
         case e: Exception => Some(onFormat(file, input, input))
