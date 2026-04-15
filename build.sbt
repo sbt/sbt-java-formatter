@@ -39,7 +39,7 @@ def commonSettings: Seq[Setting[?]] = Seq(
     }
   },
   scriptedBufferLog := false,
-  scalafmtOnCompile := true)
+  scalafmtOnCompile := !insideCI.value)
 
 lazy val sbtJavaFormatter =
   project.in(file(".")).aggregate(plugin).aggregate(`plugin-add-opens`).settings(publish / skip := true)
