@@ -30,6 +30,8 @@ import scala.sys.process.{ Process, ProcessLogger }
 object JavaFormatter {
 
   private val GoogleJavaFormatMain = "com.google.googlejavaformat.java.Main"
+  private val JavaHomeEnvVar = "SBT_JAVAFMT_JAVA_HOME"
+  private val JavaHomeProperty = "sbt-javafmt.java.home"
 
   private val JavaExports = Seq("api", "code", "file", "parser", "tree", "util").map { exportedPackage =>
     s"--add-exports=jdk.compiler/com.sun.tools.javac.$exportedPackage=ALL-UNNAMED"
@@ -351,14 +353,23 @@ object JavaFormatter {
     classpathFrom(getClass.getClassLoader).distinct.mkString(File.pathSeparator)
 
   private lazy val javaBin: String = {
-    val javaHome = new File(sys.props("java.home"))
+    val javaHomeSourceAndPath =
+      sys.props
+        .get(JavaHomeProperty)
+        .filter(_.nonEmpty)
+        .map(path => (JavaHomeProperty, path))
+        .orElse(sys.env.get(JavaHomeEnvVar).filter(_.nonEmpty).map(path => (JavaHomeEnvVar, path)))
+        .getOrElse(("java.home", sys.props("java.home")))
+    val (javaHomeSource, javaHomePath) = javaHomeSourceAndPath
+    val javaHome = new File(javaHomePath)
     val unixJava = new File(javaHome, "bin/java")
     val windowsJava = new File(javaHome, "bin/java.exe")
     val javaExec =
       if (unixJava.isFile) unixJava
       else if (windowsJava.isFile) windowsJava
       else {
-        throw new MessageOnlyException(s"Could not locate a Java launcher under java.home=${javaHome.getAbsolutePath}")
+        throw new MessageOnlyException(
+          s"Could not locate a Java launcher under ${javaHomeSource}=${javaHome.getAbsolutePath}")
       }
     javaExec.getAbsolutePath
   }
