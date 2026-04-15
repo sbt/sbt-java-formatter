@@ -57,6 +57,15 @@ This plugin uses the [Google Java Format](https://github.com/google/google-java-
 
 The formatter runs in a forked JVM managed by the plugin.
 
+By default it uses the same Java installation as the sbt process via `java.home`.
+
+To make the plugin launch the formatter with a different Java installation, set either:
+
+- the `sbt-javafmt.java.home` JVM system property
+- or the `SBT_JAVAFMT_JAVA_HOME` environment variable
+
+If both are set, `sbt-javafmt.java.home` takes precedence.
+
 Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
 
 ```scala
