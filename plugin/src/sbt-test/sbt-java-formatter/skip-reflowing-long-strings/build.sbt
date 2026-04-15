@@ -1,0 +1,1 @@
+ThisBuild / javafmtReflowLongStrings := false

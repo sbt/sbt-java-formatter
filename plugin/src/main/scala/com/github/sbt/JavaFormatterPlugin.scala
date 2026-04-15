@@ -50,6 +50,12 @@ object JavaFormatterPlugin extends AutoPlugin {
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
     val javafmtJavaMaxHeap =
       settingKey[Option[String]]("Maximum heap size passed to the forked google-java-format JVM, e.g. Some(\"256m\").")
+    val javafmtSortImports =
+      settingKey[Boolean]("Whether google-java-format should sort imports. Enabled by default.")
+    val javafmtRemoveUnusedImports =
+      settingKey[Boolean]("Whether google-java-format should remove unused imports. Enabled by default.")
+    val javafmtReflowLongStrings =
+      settingKey[Boolean]("Whether google-java-format should reflow long string literals. Enabled by default.")
     val javafmtOptions = settingKey[JavaFormatterOptions](
       "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
   }
@@ -78,7 +84,10 @@ object JavaFormatterPlugin extends AutoPlugin {
     Seq(
       javafmtOnCompile := false,
       javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
-      javafmtJavaMaxHeap := Some("256m"))
+      javafmtJavaMaxHeap := Some("256m"),
+      javafmtSortImports := true,
+      javafmtRemoveUnusedImports := true,
+      javafmtReflowLongStrings := true)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
@@ -92,7 +101,20 @@ object JavaFormatterPlugin extends AutoPlugin {
         val cache = streamz.cacheStoreFactory
         val options = javafmtOptions.value
         val javaMaxHeap = javafmtJavaMaxHeap.value
-        JavaFormatter(sD, iF, eF, streamz, cache, options, javaMaxHeap)
+        val sortImports = javafmtSortImports.value
+        val removeUnusedImports = javafmtRemoveUnusedImports.value
+        val reflowLongStrings = javafmtReflowLongStrings.value
+        JavaFormatter(
+          sD,
+          iF,
+          eF,
+          streamz,
+          cache,
+          options,
+          javaMaxHeap,
+          sortImports,
+          removeUnusedImports,
+          reflowLongStrings)
       },
       javafmtCheck := {
         val streamz = streams.value
@@ -103,7 +125,21 @@ object JavaFormatterPlugin extends AutoPlugin {
         val cache = (javafmt / streams).value.cacheStoreFactory
         val options = javafmtOptions.value
         val javaMaxHeap = javafmtJavaMaxHeap.value
-        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options, javaMaxHeap)
+        val sortImports = javafmtSortImports.value
+        val removeUnusedImports = javafmtRemoveUnusedImports.value
+        val reflowLongStrings = javafmtReflowLongStrings.value
+        JavaFormatter.check(
+          baseDir,
+          sD,
+          iF,
+          eF,
+          streamz,
+          cache,
+          options,
+          javaMaxHeap,
+          sortImports,
+          removeUnusedImports,
+          reflowLongStrings)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {
