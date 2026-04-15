@@ -48,6 +48,8 @@ object JavaFormatterPlugin extends AutoPlugin {
     val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, off by default.")
     val javafmtStyle =
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
+    val javafmtJavaMaxHeap =
+      settingKey[Option[String]]("Maximum heap size passed to the forked google-java-format JVM, e.g. Some(\"256m\").")
     val javafmtOptions = settingKey[JavaFormatterOptions](
       "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
   }
@@ -73,7 +75,10 @@ object JavaFormatterPlugin extends AutoPlugin {
   }
 
   override def globalSettings: Seq[Def.Setting[?]] =
-    Seq(javafmtOnCompile := false, javafmtStyle := JavaFormatterOptions.Style.GOOGLE)
+    Seq(
+      javafmtOnCompile := false,
+      javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
+      javafmtJavaMaxHeap := Some("256m"))
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
@@ -86,7 +91,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
         val options = javafmtOptions.value
-        JavaFormatter(sD, iF, eF, streamz, cache, options)
+        val javaMaxHeap = javafmtJavaMaxHeap.value
+        JavaFormatter(sD, iF, eF, streamz, cache, options, javaMaxHeap)
       },
       javafmtCheck := {
         val streamz = streams.value
@@ -96,7 +102,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
         val options = javafmtOptions.value
-        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options)
+        val javaMaxHeap = javafmtJavaMaxHeap.value
+        JavaFormatter.check(baseDir, sD, iF, eF, streamz, cache, options, javaMaxHeap)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {

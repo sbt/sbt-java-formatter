@@ -3,63 +3,51 @@ lazy val scala3 = "3.8.3"
 ThisBuild / scalaVersion := scala212
 ThisBuild / crossScalaVersions := Seq(scala212, scala3)
 
-def commonSettings: Seq[Setting[?]] = Seq(
-  homepage := scmInfo.value.map(_.browseUrl),
-  scmInfo := Some(
-    ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
-  developers := List(
-    Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
-  startYear := Some(2015),
-  description := "Formats Java code in your project.",
-  licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
-  (pluginCrossBuild / sbtVersion) := {
-    scalaBinaryVersion.value match {
-      case "2.12" => "1.9.0"
-      case _      => "2.0.0-RC11"
-    }
-  },
-  scalacOptions ++= {
-    Vector("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature") ++ (scalaBinaryVersion.value match {
-      case "2.12" => Vector("-Xsource:3", "-release:11")
-      case _      => Vector("-Wconf:error")
-    })
-  },
-  javacOptions ++= Seq("-encoding", "UTF-8"),
-  scriptedLaunchOpts := {
-    scriptedLaunchOpts.value ++
-    Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
-  },
-  scriptedLaunchOpts ++= {
-    if (scala.util.Properties.isJavaAtLeast("17")) {
-      Seq("api", "code", "file", "parser", "tree", "util").map { x =>
-        s"--add-exports=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
-      }
-    } else {
-      Nil
-    }
-  },
-  scriptedBufferLog := false,
-  scalafmtOnCompile := !insideCI.value)
-
-lazy val sbtJavaFormatter =
-  project.in(file(".")).aggregate(plugin).aggregate(`plugin-add-opens`).settings(publish / skip := true)
+lazy val sbtJavaFormatter = project.in(file(".")).aggregate(plugin).settings(publish / skip := true)
 
 lazy val plugin = project
   .in(file("plugin"))
   .enablePlugins(SbtPlugin)
   .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings *)
   .settings(
     name := "sbt-java-formatter",
-    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"))
-
-lazy val `plugin-add-opens` = project
-  .in(file("plugin-add-opens"))
-  .enablePlugins(SbtPlugin)
-  .enablePlugins(AutomateHeaderPlugin)
-  .settings(commonSettings *)
-  .settings(name := "sbt-java-formatter-add-opens")
-  .dependsOn(plugin)
+    homepage := scmInfo.value.map(_.browseUrl),
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
+    developers := List(
+      Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
+    libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"),
+    startYear := Some(2015),
+    description := "Formats Java code in your project.",
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
+    (pluginCrossBuild / sbtVersion) := {
+      scalaBinaryVersion.value match {
+        case "2.12" => "1.9.0"
+        case _      => "2.0.0-RC11"
+      }
+    },
+    scalacOptions ++= {
+      Vector("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature") ++ (scalaBinaryVersion.value match {
+        case "2.12" => Vector("-Xsource:3", "-release:11")
+        case _      => Vector("-Wconf:error")
+      })
+    },
+    javacOptions ++= Seq("-encoding", "UTF-8"),
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedLaunchOpts ++= {
+      if (scala.util.Properties.isJavaAtLeast("17")) {
+        Seq("api", "code", "file", "parser", "tree", "util").map { x =>
+          s"--add-exports=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
+        }
+      } else {
+        Nil
+      }
+    },
+    scriptedBufferLog := false,
+    scalafmtOnCompile := !insideCI.value)
 
 ThisBuild / organization := "com.github.sbt"
 ThisBuild / organizationName := "sbt community"
