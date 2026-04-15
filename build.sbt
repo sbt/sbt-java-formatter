@@ -37,15 +37,6 @@ lazy val plugin = project
       scriptedLaunchOpts.value ++
       Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
     },
-    scriptedLaunchOpts ++= {
-      if (scala.util.Properties.isJavaAtLeast("17")) {
-        Seq("api", "code", "file", "parser", "tree", "util").map { x =>
-          s"--add-exports=jdk.compiler/com.sun.tools.javac.${x}=ALL-UNNAMED"
-        }
-      } else {
-        Nil
-      }
-    },
     scriptedBufferLog := false,
     scalafmtOnCompile := !insideCI.value)
 
