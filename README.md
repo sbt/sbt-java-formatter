@@ -8,6 +8,10 @@ An sbt plugin for formatting Java code. This plugin began as a combination of id
 [blog post](https://ssscripting.wordpress.com/2009/06/10/how-to-use-the-eclipse-code-formatter-from-your-code/)
 and this [maven plugin](https://github.com/revelc/formatter-maven-plugin), though it has evolved since.
 
+`google-java-format` relies on internal `jdk.compiler` APIs. On Java 17 and newer, access to those APIs is strongly encapsulated by the module system.
+
+To keep the formatter commands working without requiring manual JVM flags, the plugin runs `google-java-format` in a forked JVM with the required module access flags.
+
 # Usage
 
 Add the plugin to `project/plugins.sbt`:
@@ -25,6 +29,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
+* The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
 This plugin requires sbt 1.3.0+.
 
@@ -39,6 +44,22 @@ inConfig(IntegrationTest)(JavaFormatterPlugin.toBeScopedSettings)
 # Configuration
 
 This plugin uses the [Google Java Format](https://github.com/google/google-java-format) library, which makes it quite opinionated and not particularly configurable.
+
+## Formatter JVM
+
+The formatter runs in a forked JVM managed by the plugin.
+
+Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
+
+```scala
+ThisBuild / javafmtJavaMaxHeap := Some("512m")
+```
+
+Set it to `None` to disable the explicit heap cap:
+
+```scala
+ThisBuild / javafmtJavaMaxHeap := None
+```
 
 If you want to tweak the format, take a minute to consider whether it is really worth it, and have a look at the motivations in the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you decide you really need more flexibility, you could consider other plugins such as the [sbt-checkstyle-plugin](https://github.com/etsy/sbt-checkstyle-plugin)

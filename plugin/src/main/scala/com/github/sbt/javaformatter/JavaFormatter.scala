@@ -16,14 +16,24 @@
 
 package com.github.sbt.javaformatter
 
+import java.io.File
+import java.net.URLClassLoader
+
 import _root_.sbt.Keys._
 import _root_.sbt._
 import _root_.sbt.util.CacheImplicits._
 import _root_.sbt.util.{ CacheStoreFactory, FileInfo, Logger }
-import com.google.googlejavaformat.java.{ Formatter, JavaFormatterOptions }
+import com.google.googlejavaformat.java.JavaFormatterOptions
 import scala.collection.immutable.Seq
+import scala.sys.process.{ Process, ProcessLogger }
 
 object JavaFormatter {
+
+  private val GoogleJavaFormatMain = "com.google.googlejavaformat.java.Main"
+
+  private val JavaExports = Seq("api", "code", "file", "parser", "tree", "util").map { exportedPackage =>
+    s"--add-exports=jdk.compiler/com.sun.tools.javac.$exportedPackage=ALL-UNNAMED"
+  }
 
   def apply(
       sourceDirectories: Seq[File],
@@ -31,9 +41,10 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Unit = {
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    cachedFormatSources(cacheStoreFactory, files, streams.log)(using new Formatter(options))
+    cachedFormatSources(cacheStoreFactory, files, streams.log, options, javaMaxHeap)
   }
 
   def check(
@@ -43,9 +54,10 @@ object JavaFormatter {
       excludeFilter: FileFilter,
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
-      options: JavaFormatterOptions): Boolean = {
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
-    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log)(using new Formatter(options))
+    val analysis = cachedCheckSources(cacheStoreFactory, baseDir, files, streams.log, options, javaMaxHeap)
     trueOrBoom(analysis)
   }
 
@@ -72,15 +84,20 @@ object JavaFormatter {
       })
   }
 
-  private def cachedCheckSources(cacheStoreFactory: CacheStoreFactory, baseDir: File, sources: Seq[File], log: Logger)(
-      implicit formatter: Formatter): Analysis = {
+  private def cachedCheckSources(
+      cacheStoreFactory: CacheStoreFactory,
+      baseDir: File,
+      sources: Seq[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Analysis = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
       val filesToCheck: Set[File] = updatedOrAdded
       val prevFailed: Set[File] = prev.failedCheck & outDiff.unmodified
       prevFailed.foreach { file => warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log) }
-      val result = checkSources(baseDir, filesToCheck.toList, log)
+      val result = checkSources(baseDir, filesToCheck.toList, log, options, javaMaxHeap)
       prev.copy(failedCheck = result.failedCheck | prevFailed)
     }
   }
@@ -89,43 +106,49 @@ object JavaFormatter {
     log.warn(s"${file.toString} isn't formatted properly!")
   }
 
-  private def checkSources(baseDir: File, sources: Seq[File], log: Logger)(implicit formatter: Formatter): Analysis = {
+  private def checkSources(
+      baseDir: File,
+      sources: Seq[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Analysis = {
     if (sources.nonEmpty) {
       log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
     }
-    val unformatted = withFormattedSources(sources, log)((file, input, output) => {
-      val diff = input != output
-      if (diff) {
-        warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log)
-        Some(file)
-      } else None
-    }).flatten.flatten.toSet
+    val unformatted = runCheck(baseDir, sources, log, options, javaMaxHeap)
+    unformatted.foreach { file => warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log) }
     Analysis(failedCheck = unformatted)
   }
 
-  private def cachedFormatSources(cacheStoreFactory: CacheStoreFactory, sources: Seq[File], log: Logger)(implicit
-      formatter: Formatter): Unit = {
+  private def cachedFormatSources(
+      cacheStoreFactory: CacheStoreFactory,
+      sources: Seq[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Unit = {
     trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
       val filesToFormat: Set[File] = updatedOrAdded | prev.failedCheck
       if (filesToFormat.nonEmpty) {
         log.info(s"Formatting ${filesToFormat.size} Java source${plural(filesToFormat.size)}...")
-        formatSources(filesToFormat, log)
+        formatSources(filesToFormat, log, options, javaMaxHeap)
       }
       Analysis(Set.empty)
     }
   }
 
-  private def formatSources(sources: Set[File], log: Logger)(implicit formatter: Formatter): Unit = {
-    val cnt = withFormattedSources(sources.toList, log)((file, input, output) => {
-      if (input != output) {
-        IO.write(file, output)
-        1
-      } else {
-        0
-      }
-    }).flatten.sum
+  private def formatSources(
+      sources: Set[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Unit = {
+    val changed =
+      runCheck(baseDir = new File("."), sources.toList, log, options, javaMaxHeap, warnOnFailure = false)
+    if (changed.nonEmpty) {
+      runReplace(changed.toList, log, options, javaMaxHeap)
+    }
+    val cnt = changed.size
     log.info(s"Reformatted $cnt Java source${plural(cnt)}")
   }
 
@@ -141,16 +164,108 @@ object JavaFormatter {
     prevTracker(())
   }
 
-  private def withFormattedSources[T](sources: Seq[File], log: Logger)(onFormat: (File, String, String) => T)(implicit
-      formatter: Formatter): Seq[Option[T]] = {
-    sources.map { file =>
-      val input = IO.read(file)
-      try {
-        val output = formatter.formatSourceAndFixImports(input)
-        Some(onFormat(file, input, output))
-      } catch {
-        case e: Exception => Some(onFormat(file, input, input))
+  private def cliFlags(options: JavaFormatterOptions): Seq[String] = {
+    if (!options.reorderModifiers()) {
+      throw new MessageOnlyException(
+        "The forked google-java-format CLI does not support reorderModifiers = false. " +
+        "Please use the default reorderModifiers setting.")
+    }
+    val styleFlags =
+      if (options.style() == JavaFormatterOptions.Style.AOSP) Seq("--aosp")
+      else Nil
+    val javadocFlags =
+      if (options.formatJavadoc()) Nil
+      else Seq("--skip-javadoc-formatting")
+    styleFlags ++ javadocFlags
+  }
+
+  private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
+
+  private def classpathFrom(loader: ClassLoader): List[String] =
+    loader match {
+      case null                      => Nil
+      case urlLoader: URLClassLoader =>
+        urlLoader.getURLs.iterator.map(url => new File(url.toURI).getAbsolutePath).toList ++ classpathFrom(
+          loader.getParent)
+      case _ =>
+        classpathFrom(loader.getParent)
+    }
+
+  private lazy val formatterClasspath: String =
+    classpathFrom(getClass.getClassLoader).distinct.mkString(File.pathSeparator)
+
+  private lazy val javaBin: String = {
+    val javaHome = new File(sys.props("java.home"))
+    val unixJava = new File(javaHome, "bin/java")
+    val windowsJava = new File(javaHome, "bin/java.exe")
+    val javaExec =
+      if (unixJava.isFile) unixJava
+      else if (windowsJava.isFile) windowsJava
+      else {
+        throw new MessageOnlyException(s"Could not locate a Java launcher under java.home=${javaHome.getAbsolutePath}")
       }
+    javaExec.getAbsolutePath
+  }
+
+  private def javaArgs(args: Seq[String], javaMaxHeap: Option[String]): Seq[String] =
+    javaMaxHeap.toList
+      .map(heap => s"-Xmx$heap") ++ JavaExports ++ Seq("-cp", formatterClasspath, GoogleJavaFormatMain) ++ args
+
+  private def renderJavaArg(arg: String): String =
+    if (arg.isEmpty || arg.exists(_.isWhitespace) || arg.contains("\"")) {
+      "\"" + arg.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+    } else {
+      arg
+    }
+
+  private def runCli(args: Seq[String], log: Logger, javaMaxHeap: Option[String]): CliResult =
+    IO.withTemporaryFile("google-java-format-java", ".args") { argFile =>
+      IO.writeLines(argFile, javaArgs(args, javaMaxHeap).map(renderJavaArg))
+      val stdout = Vector.newBuilder[String]
+      val stderr = Vector.newBuilder[String]
+      val exitCode = Process(Seq(javaBin, s"@${argFile.getAbsolutePath}")).!(ProcessLogger(stdout += _, stderr += _))
+      CliResult(exitCode, stdout.result(), stderr.result())
+    }
+
+  private def runCheck(
+      baseDir: File,
+      sources: Seq[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String],
+      warnOnFailure: Boolean = true): Set[File] = {
+    if (sources.isEmpty) {
+      return Set.empty
+    }
+    val args = cliFlags(options) ++ Seq("--dry-run", "--set-exit-if-changed") ++ sources.map(_.getAbsolutePath)
+    val result = runCli(args, log, javaMaxHeap)
+    val changed = result.stdout.iterator.map(path => file(path)).toSet
+    result.exitCode match {
+      case 0 | 1 =>
+        changed
+      case _ =>
+        if (warnOnFailure) {
+          result.stderr.foreach(line => log.error(line))
+          result.stdout.foreach(line => log.error(line))
+        }
+        throw new MessageOnlyException("google-java-format check failed")
+    }
+  }
+
+  private def runReplace(
+      sources: Seq[File],
+      log: Logger,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String]): Unit = {
+    if (sources.isEmpty) {
+      return
+    }
+    val args = cliFlags(options) ++ Seq("--replace") ++ sources.map(_.getAbsolutePath)
+    val result = runCli(args, log, javaMaxHeap)
+    if (result.exitCode != 0) {
+      result.stderr.foreach(line => log.error(line))
+      result.stdout.foreach(line => log.error(line))
+      throw new MessageOnlyException("google-java-format failed")
     }
   }
 
