@@ -29,6 +29,9 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
+* The `javafmtSortImports` setting controls whether imports are sorted (`true` by default).
+* The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
+* The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
 This plugin requires sbt 1.3.0+.
@@ -60,6 +63,18 @@ Set it to `None` to disable the explicit heap cap:
 ```scala
 ThisBuild / javafmtJavaMaxHeap := None
 ```
+
+## Formatter Options
+
+The plugin also exposes a few `google-java-format` CLI options directly:
+
+```scala
+ThisBuild / javafmtSortImports := true
+ThisBuild / javafmtRemoveUnusedImports := true
+ThisBuild / javafmtReflowLongStrings := true
+```
+
+Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
 
 If you want to tweak the format, take a minute to consider whether it is really worth it, and have a look at the motivations in the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you decide you really need more flexibility, you could consider other plugins such as the [sbt-checkstyle-plugin](https://github.com/etsy/sbt-checkstyle-plugin)
