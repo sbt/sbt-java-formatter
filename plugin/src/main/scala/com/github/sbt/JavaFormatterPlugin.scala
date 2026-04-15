@@ -68,8 +68,10 @@ object JavaFormatterPlugin extends AutoPlugin {
       settingKey[Boolean]("Whether google-java-format should remove unused imports. Enabled by default.")
     val javafmtReflowLongStrings =
       settingKey[Boolean]("Whether google-java-format should reflow long string literals. Enabled by default.")
+    val javafmtFormatJavadoc =
+      settingKey[Boolean]("Whether google-java-format should format Javadoc comments. Enabled by default.")
     val javafmtOptions = settingKey[JavaFormatterOptions](
-      "Define all formatting options such as style or enabling Javadoc formatting. See _JavaFormatterOptions_ for more")
+      "Compatibility setting for upstream JavaFormatterOptions. Prefer the dedicated javafmt... settings; reorderModifiers() currently has no effect with the released google-java-format CLI used by this plugin.")
   }
 
   import autoImport._
@@ -105,12 +107,17 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtJavaMaxHeap := Some("256m"),
       javafmtSortImports := true,
       javafmtRemoveUnusedImports := true,
-      javafmtReflowLongStrings := true)
+      javafmtReflowLongStrings := true,
+      javafmtFormatJavadoc := true)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
       (javafmt / sourceDirectories) := List(javaSource.value),
-      javafmtOptions := JavaFormatterOptions.builder().style(javafmtStyle.value).build(),
+      javafmtOptions := JavaFormatterOptions
+        .builder()
+        .style(javafmtStyle.value)
+        .formatJavadoc(javafmtFormatJavadoc.value)
+        .build(),
       javafmt := {
         val streamz = streams.value
         val sD = (javafmt / sourceDirectories).value.toList

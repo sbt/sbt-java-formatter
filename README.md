@@ -36,6 +36,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * The `javafmtSortImports` setting controls whether imports are sorted (`true` by default).
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
+* The `javafmtFormatJavadoc` setting controls whether Javadoc comments are reformatted (`true` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
 This plugin requires sbt 1.3.0+.
@@ -76,9 +77,16 @@ The plugin also exposes a few `google-java-format` CLI options directly:
 ThisBuild / javafmtSortImports := true
 ThisBuild / javafmtRemoveUnusedImports := true
 ThisBuild / javafmtReflowLongStrings := true
+ThisBuild / javafmtFormatJavadoc := true
 ```
 
 Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
+
+`javafmtOptions` is still available for compatibility, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
+
+`JavaFormatterOptions.reorderModifiers()` currently has no effect in this plugin.
+
+The plugin now runs `google-java-format` via its CLI in a forked JVM, and the released `google-java-format` CLI used here [does not yet support a corresponding `--skip-reordering-modifiers` flag](https://github.com/google/google-java-format/pull/1373).
 
 If you want to tweak the format, take a minute to consider whether it is really worth it, and have a look at the motivations in the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you decide you really need more flexibility, you could consider other plugins such as the [sbt-checkstyle-plugin](https://github.com/etsy/sbt-checkstyle-plugin)
