@@ -363,17 +363,15 @@ object JavaFormatter {
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Seq[String] = {
-    if (!options.reorderModifiers()) {
-      throw new MessageOnlyException(
-        "The forked google-java-format CLI does not support reorderModifiers = false. " +
-        "Please use the default reorderModifiers setting.")
-    }
     val styleFlags =
       if (options.style() == JavaFormatterOptions.Style.AOSP) Seq("--aosp")
       else Nil
     val javadocFlags =
       if (options.formatJavadoc()) Nil
       else Seq("--skip-javadoc-formatting")
+    val reorderModifiersFlags =
+      if (options.reorderModifiers()) Nil
+      else Seq("--skip-reordering-modifiers")
     val fixImportsOnlyFlags =
       if (fixImportsOnly) Seq("--fix-imports-only")
       else Nil
@@ -386,7 +384,7 @@ object JavaFormatter {
     val reflowLongStringsFlags =
       if (reflowLongStrings) Nil
       else Seq("--skip-reflowing-long-strings")
-    styleFlags ++ javadocFlags ++ fixImportsOnlyFlags ++ sortImportsFlags ++ removeUnusedImportsFlags ++ reflowLongStringsFlags
+    styleFlags ++ javadocFlags ++ reorderModifiersFlags ++ fixImportsOnlyFlags ++ sortImportsFlags ++ removeUnusedImportsFlags ++ reflowLongStringsFlags
   }
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
