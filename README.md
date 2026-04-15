@@ -26,6 +26,10 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * `javafmtAll` formats Java files for all configurations (`Compile` and `Test` by default)
 * `javafmtCheck` fails if files need reformatting
 * `javafmtCheckAll` fails if files need reformatting in any configuration (`Compile` and `Test` by default)
+* `javafmtFixImports` fixes Java imports only, without applying full formatting
+* `javafmtFixImportsAll` fixes Java imports only for all configurations (`Compile` and `Test` by default)
+* `javafmtFixImportsCheck` fails if Java imports need fixing
+* `javafmtFixImportsCheckAll` fails if Java imports need fixing in any configuration (`Compile` and `Test` by default)
 
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.

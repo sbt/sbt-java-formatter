@@ -38,12 +38,24 @@ object JavaFormatterPlugin extends AutoPlugin {
     @transient
     val javafmtCheck: TaskKey[Boolean] = taskKey("Fail, if a Java source needs reformatting.")
     @transient
+    val javafmtFixImports: TaskKey[Unit] = taskKey("Fix Java imports only, without applying full formatting.")
+    @transient
+    val javafmtFixImportsCheck: TaskKey[Boolean] = taskKey("Fail, if Java imports need fixing.")
+    @transient
     val javafmtAll: TaskKey[Unit] = taskKey(
       "Execute the javafmt task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
     @transient
     val javafmtCheckAll: TaskKey[Unit] = taskKey(
       "Execute the javafmtCheck task for all configurations in which it is enabled. " +
+      "(By default this means the Compile and Test configurations.)")
+    @transient
+    val javafmtFixImportsAll: TaskKey[Unit] = taskKey(
+      "Execute the javafmtFixImports task for all configurations in which it is enabled. " +
+      "(By default this means the Compile and Test configurations.)")
+    @transient
+    val javafmtFixImportsCheckAll: TaskKey[Unit] = taskKey(
+      "Execute the javafmtFixImportsCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
     val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, off by default.")
     val javafmtStyle =
@@ -77,6 +89,12 @@ object JavaFormatterPlugin extends AutoPlugin {
       },
       javafmtCheckAll := {
         val _ = javafmtCheck.?.all(anyConfigsInThisProject).value
+      },
+      javafmtFixImportsAll := {
+        val _ = javafmtFixImports.?.all(anyConfigsInThisProject).value
+      },
+      javafmtFixImportsCheckAll := {
+        val _ = javafmtFixImportsCheck.?.all(anyConfigsInThisProject).value
       })
   }
 
@@ -129,6 +147,54 @@ object JavaFormatterPlugin extends AutoPlugin {
         val removeUnusedImports = javafmtRemoveUnusedImports.value
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.check(
+          baseDir,
+          sD,
+          iF,
+          eF,
+          streamz,
+          cache,
+          options,
+          javaMaxHeap,
+          sortImports,
+          removeUnusedImports,
+          reflowLongStrings)
+      },
+      javafmtFixImports := {
+        val streamz = streams.value
+        val sD = (javafmt / sourceDirectories).value.toList
+        val iF = (javafmt / includeFilter).value
+        val eF = (javafmt / excludeFilter).value
+        val cache = streamz.cacheStoreFactory
+        val options = javafmtOptions.value
+        val javaMaxHeap = javafmtJavaMaxHeap.value
+        val sortImports = javafmtSortImports.value
+        val removeUnusedImports = javafmtRemoveUnusedImports.value
+        val reflowLongStrings = javafmtReflowLongStrings.value
+        JavaFormatter.fixImports(
+          sD,
+          iF,
+          eF,
+          streamz,
+          cache,
+          options,
+          javaMaxHeap,
+          sortImports,
+          removeUnusedImports,
+          reflowLongStrings)
+      },
+      javafmtFixImportsCheck := {
+        val streamz = streams.value
+        val baseDir = (ThisBuild / baseDirectory).value
+        val sD = (javafmt / sourceDirectories).value.toList
+        val iF = (javafmt / includeFilter).value
+        val eF = (javafmt / excludeFilter).value
+        val cache = (javafmt / streams).value.cacheStoreFactory
+        val options = javafmtOptions.value
+        val javaMaxHeap = javafmtJavaMaxHeap.value
+        val sortImports = javafmtSortImports.value
+        val removeUnusedImports = javafmtRemoveUnusedImports.value
+        val reflowLongStrings = javafmtReflowLongStrings.value
+        JavaFormatter.fixImportsCheck(
           baseDir,
           sD,
           iF,
