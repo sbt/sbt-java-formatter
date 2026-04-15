@@ -53,6 +53,31 @@ object JavaFormatter {
       streams.log,
       options,
       javaMaxHeap,
+      fixImportsOnly = false,
+      sortImports,
+      removeUnusedImports,
+      reflowLongStrings)
+  }
+
+  def fixImports(
+      sourceDirectories: Seq[File],
+      includeFilter: FileFilter,
+      excludeFilter: FileFilter,
+      streams: TaskStreams,
+      cacheStoreFactory: CacheStoreFactory,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String],
+      sortImports: Boolean,
+      removeUnusedImports: Boolean,
+      reflowLongStrings: Boolean): Unit = {
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
+    cachedFormatSources(
+      cacheStoreFactory,
+      files,
+      streams.log,
+      options,
+      javaMaxHeap,
+      fixImportsOnly = true,
       sortImports,
       removeUnusedImports,
       reflowLongStrings)
@@ -79,6 +104,35 @@ object JavaFormatter {
         streams.log,
         options,
         javaMaxHeap,
+        fixImportsOnly = false,
+        sortImports,
+        removeUnusedImports,
+        reflowLongStrings)
+    trueOrBoom(analysis)
+  }
+
+  def fixImportsCheck(
+      baseDir: File,
+      sourceDirectories: Seq[File],
+      includeFilter: FileFilter,
+      excludeFilter: FileFilter,
+      streams: TaskStreams,
+      cacheStoreFactory: CacheStoreFactory,
+      options: JavaFormatterOptions,
+      javaMaxHeap: Option[String],
+      sortImports: Boolean,
+      removeUnusedImports: Boolean,
+      reflowLongStrings: Boolean): Boolean = {
+    val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
+    val analysis =
+      cachedCheckSources(
+        cacheStoreFactory,
+        baseDir,
+        files,
+        streams.log,
+        options,
+        javaMaxHeap,
+        fixImportsOnly = true,
         sortImports,
         removeUnusedImports,
         reflowLongStrings)
@@ -115,6 +169,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Analysis = {
@@ -130,6 +185,7 @@ object JavaFormatter {
         log,
         options,
         javaMaxHeap,
+        fixImportsOnly,
         sortImports,
         removeUnusedImports,
         reflowLongStrings)
@@ -147,6 +203,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Analysis = {
@@ -154,7 +211,16 @@ object JavaFormatter {
       log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
     }
     val unformatted =
-      runCheck(baseDir, sources, log, options, javaMaxHeap, sortImports, removeUnusedImports, reflowLongStrings)
+      runCheck(
+        baseDir,
+        sources,
+        log,
+        options,
+        javaMaxHeap,
+        fixImportsOnly,
+        sortImports,
+        removeUnusedImports,
+        reflowLongStrings)
     unformatted.foreach { file => warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log) }
     Analysis(failedCheck = unformatted)
   }
@@ -165,6 +231,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Unit = {
@@ -174,7 +241,15 @@ object JavaFormatter {
       val filesToFormat: Set[File] = updatedOrAdded | prev.failedCheck
       if (filesToFormat.nonEmpty) {
         log.info(s"Formatting ${filesToFormat.size} Java source${plural(filesToFormat.size)}...")
-        formatSources(filesToFormat, log, options, javaMaxHeap, sortImports, removeUnusedImports, reflowLongStrings)
+        formatSources(
+          filesToFormat,
+          log,
+          options,
+          javaMaxHeap,
+          fixImportsOnly,
+          sortImports,
+          removeUnusedImports,
+          reflowLongStrings)
       }
       Analysis(Set.empty)
     }
@@ -185,6 +260,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Unit = {
@@ -195,12 +271,21 @@ object JavaFormatter {
         log,
         options,
         javaMaxHeap,
+        fixImportsOnly,
         sortImports,
         removeUnusedImports,
         reflowLongStrings,
         warnOnFailure = false)
     if (changed.nonEmpty) {
-      runReplace(changed.toList, log, options, javaMaxHeap, sortImports, removeUnusedImports, reflowLongStrings)
+      runReplace(
+        changed.toList,
+        log,
+        options,
+        javaMaxHeap,
+        fixImportsOnly,
+        sortImports,
+        removeUnusedImports,
+        reflowLongStrings)
     }
     val cnt = changed.size
     log.info(s"Reformatted $cnt Java source${plural(cnt)}")
@@ -220,6 +305,7 @@ object JavaFormatter {
 
   private def cliFlags(
       options: JavaFormatterOptions,
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Seq[String] = {
@@ -232,6 +318,9 @@ object JavaFormatter {
     val reorderModifiersFlags =
       if (options.reorderModifiers()) Nil
       else Seq("--skip-reordering-modifiers")
+    val fixImportsOnlyFlags =
+      if (fixImportsOnly) Seq("--fix-imports-only")
+      else Nil
     val sortImportsFlags =
       if (sortImports) Nil
       else Seq("--skip-sorting-imports")
@@ -241,7 +330,7 @@ object JavaFormatter {
     val reflowLongStringsFlags =
       if (reflowLongStrings) Nil
       else Seq("--skip-reflowing-long-strings")
-    styleFlags ++ javadocFlags ++ reorderModifiersFlags ++ sortImportsFlags ++ removeUnusedImportsFlags ++ reflowLongStringsFlags
+    styleFlags ++ javadocFlags ++ reorderModifiersFlags ++ fixImportsOnlyFlags ++ sortImportsFlags ++ removeUnusedImportsFlags ++ reflowLongStringsFlags
   }
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
@@ -298,6 +387,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean,
@@ -306,7 +396,7 @@ object JavaFormatter {
       return Set.empty
     }
     val args =
-      cliFlags(options, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
+      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
         "--dry-run",
         "--set-exit-if-changed") ++ sources.map(_.getAbsolutePath)
     val result = runCli(args, log, javaMaxHeap)
@@ -328,6 +418,7 @@ object JavaFormatter {
       log: Logger,
       options: JavaFormatterOptions,
       javaMaxHeap: Option[String],
+      fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean): Unit = {
@@ -335,8 +426,8 @@ object JavaFormatter {
       return
     }
     val args =
-      cliFlags(options, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq("--replace") ++ sources.map(
-        _.getAbsolutePath)
+      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
+        "--replace") ++ sources.map(_.getAbsolutePath)
     val result = runCli(args, log, javaMaxHeap)
     if (result.exitCode != 0) {
       result.stderr.foreach(line => log.error(line))
