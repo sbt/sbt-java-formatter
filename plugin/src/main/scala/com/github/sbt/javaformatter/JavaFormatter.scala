@@ -17,7 +17,6 @@
 package com.github.sbt.javaformatter
 
 import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 
 import _root_.sbt.Keys._
 import _root_.sbt._
@@ -33,7 +32,7 @@ object JavaFormatter {
   private val JavaHomeEnvVar = "SBT_JAVAFMT_JAVA_HOME"
   private val JavaHomeProperty = "sbt-javafmt.java.home"
   private val incompatibleJavaRuntimeHelpLoggedByProject =
-    new scala.collection.concurrent.TrieMap[String, AtomicBoolean]
+    new scala.collection.concurrent.TrieMap[String, String]
 
   private val JavaExports = Seq("api", "code", "file", "parser", "tree", "util").map { exportedPackage =>
     s"--add-exports=jdk.compiler/com.sun.tools.javac.$exportedPackage=ALL-UNNAMED"
@@ -41,6 +40,7 @@ object JavaFormatter {
 
   def apply(
       projectId: String,
+      invocationId: String,
       sourceDirectories: Seq[File],
       includeFilter: FileFilter,
       excludeFilter: FileFilter,
@@ -58,6 +58,7 @@ object JavaFormatter {
       files,
       streams.log,
       projectId,
+      invocationId,
       options,
       formatterClasspath,
       javaMaxHeap,
@@ -69,6 +70,7 @@ object JavaFormatter {
 
   def fixImports(
       projectId: String,
+      invocationId: String,
       sourceDirectories: Seq[File],
       includeFilter: FileFilter,
       excludeFilter: FileFilter,
@@ -86,6 +88,7 @@ object JavaFormatter {
       files,
       streams.log,
       projectId,
+      invocationId,
       options,
       formatterClasspath,
       javaMaxHeap,
@@ -97,6 +100,7 @@ object JavaFormatter {
 
   def check(
       projectId: String,
+      invocationId: String,
       baseDir: File,
       sourceDirectories: Seq[File],
       includeFilter: FileFilter,
@@ -117,6 +121,7 @@ object JavaFormatter {
         files,
         streams.log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -129,6 +134,7 @@ object JavaFormatter {
 
   def fixImportsCheck(
       projectId: String,
+      invocationId: String,
       baseDir: File,
       sourceDirectories: Seq[File],
       includeFilter: FileFilter,
@@ -149,6 +155,7 @@ object JavaFormatter {
         files,
         streams.log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -188,6 +195,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -206,6 +214,7 @@ object JavaFormatter {
         filesToCheck.toList,
         log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -226,6 +235,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -242,6 +252,7 @@ object JavaFormatter {
         sources,
         log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -258,6 +269,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -275,6 +287,7 @@ object JavaFormatter {
           filesToFormat,
           log,
           projectId,
+          invocationId,
           options,
           formatterClasspath,
           javaMaxHeap,
@@ -291,6 +304,7 @@ object JavaFormatter {
       sources: Set[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -304,6 +318,7 @@ object JavaFormatter {
         sources.toList,
         log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -317,6 +332,7 @@ object JavaFormatter {
         changed.toList,
         log,
         projectId,
+        invocationId,
         options,
         formatterClasspath,
         javaMaxHeap,
@@ -375,13 +391,13 @@ object JavaFormatter {
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
 
-  private def logCliFailure(result: CliResult, log: Logger, projectId: String): Unit = {
+  private def logCliFailure(result: CliResult, log: Logger, projectId: String, invocationId: String): Unit = {
     result.stderr.foreach(line => log.error(line))
     result.stdout.foreach(line => log.error(line))
     incompatibleJavaRuntimeHelp(result).foreach { message =>
-      val loggedForProject =
-        incompatibleJavaRuntimeHelpLoggedByProject.getOrElseUpdate(projectId, new AtomicBoolean(false))
-      if (loggedForProject.compareAndSet(false, true)) {
+      val previouslyLoggedInvocation = incompatibleJavaRuntimeHelpLoggedByProject.putIfAbsent(projectId, invocationId)
+      if (previouslyLoggedInvocation.forall(_ != invocationId)) {
+        incompatibleJavaRuntimeHelpLoggedByProject.put(projectId, invocationId)
         log.info(message)
       }
     }
@@ -470,6 +486,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -490,13 +507,13 @@ object JavaFormatter {
     result.exitCode match {
       case 0 | 1 =>
         if (result.exitCode == 1 && changed.isEmpty) {
-          logCliFailure(result, log, projectId)
+          logCliFailure(result, log, projectId, invocationId)
           throw new MessageOnlyException("google-java-format check failed")
         }
         changed
       case _ =>
         if (warnOnFailure) {
-          logCliFailure(result, log, projectId)
+          logCliFailure(result, log, projectId, invocationId)
         }
         throw new MessageOnlyException("google-java-format check failed")
     }
@@ -506,6 +523,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       projectId: String,
+      invocationId: String,
       options: JavaFormatterOptions,
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
@@ -521,7 +539,7 @@ object JavaFormatter {
         "--replace") ++ sources.map(_.getAbsolutePath)
     val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     if (result.exitCode != 0) {
-      logCliFailure(result, log, projectId)
+      logCliFailure(result, log, projectId, invocationId)
       throw new MessageOnlyException("google-java-format failed")
     }
   }
