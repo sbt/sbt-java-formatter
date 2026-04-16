@@ -111,7 +111,7 @@ Set any of them to `false` to pass the corresponding `--skip-...` flag to `googl
 
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
-- `21` -> `google-java-format 1.34.0`
+- `21` -> `google-java-format 1.35.0`
 
 If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
 
