@@ -17,6 +17,7 @@
 package com.github.sbt.javaformatter
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 import _root_.sbt.Keys._
 import _root_.sbt._
@@ -31,6 +32,7 @@ object JavaFormatter {
   private val GoogleJavaFormatMain = "com.google.googlejavaformat.java.Main"
   private val JavaHomeEnvVar = "SBT_JAVAFMT_JAVA_HOME"
   private val JavaHomeProperty = "sbt-javafmt.java.home"
+  private val incompatibleJavaRuntimeHelpLogged = new AtomicBoolean(false)
 
   private val JavaExports = Seq("api", "code", "file", "parser", "tree", "util").map { exportedPackage =>
     s"--add-exports=jdk.compiler/com.sun.tools.javac.$exportedPackage=ALL-UNNAMED"
@@ -358,7 +360,11 @@ object JavaFormatter {
   private def logCliFailure(result: CliResult, log: Logger): Unit = {
     result.stderr.foreach(line => log.error(line))
     result.stdout.foreach(line => log.error(line))
-    incompatibleJavaRuntimeHelp(result).foreach(message => log.info(message))
+    incompatibleJavaRuntimeHelp(result).foreach { message =>
+      if (incompatibleJavaRuntimeHelpLogged.compareAndSet(false, true)) {
+        log.info(message)
+      }
+    }
   }
 
   private def incompatibleJavaRuntimeHelp(result: CliResult): Option[String] = {
