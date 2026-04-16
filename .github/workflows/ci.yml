@@ -69,7 +69,7 @@ jobs:
     - name: Build and test (sbt 2.x, Java 25)
       if: ${{ matrix.jobtype == 4 }}
       shell: bash
-      run: sbt -v '++ 3.x' clean scalafmtSbtCheck scalafmtCheckAll test 'scripted sbt-java-formatter/*' 'scripted java-runtime/compatible-21'
+      run: sbt -v '++ 3.x' clean scalafmtSbtCheck scalafmtCheckAll test 'scripted java-runtime/compatible-21'
     - name: Build and test (sbt 1.x, Java 11 with formatter on Java 25)
       if: ${{ matrix.jobtype == 5 }}
       shell: bash
@@ -78,4 +78,4 @@ jobs:
         SBT_JAVAFMT_JAVA_HOME: ${{ env.JAVA_HOME_25_X64 }}
       run: |
         export PATH="${JAVA_HOME}/bin:$PATH"
-        sbt -v '++ 2.12.x' clean scalafmtSbtCheck scalafmtCheckAll test 'scripted sbt-java-formatter/*' 'scripted java-runtime/compatible-21'
+        sbt -v '++ 2.12.x' clean scalafmtSbtCheck scalafmtCheckAll test 'scripted java-runtime/compatible-21'
