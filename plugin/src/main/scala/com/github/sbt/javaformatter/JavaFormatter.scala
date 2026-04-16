@@ -17,7 +17,6 @@
 package com.github.sbt.javaformatter
 
 import java.io.File
-import java.net.URLClassLoader
 
 import _root_.sbt.Keys._
 import _root_.sbt._
@@ -44,6 +43,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -54,6 +54,7 @@ object JavaFormatter {
       files,
       streams.log,
       options,
+      formatterClasspath,
       javaMaxHeap,
       fixImportsOnly = false,
       sortImports,
@@ -68,6 +69,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -78,6 +80,7 @@ object JavaFormatter {
       files,
       streams.log,
       options,
+      formatterClasspath,
       javaMaxHeap,
       fixImportsOnly = true,
       sortImports,
@@ -93,6 +96,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -105,6 +109,7 @@ object JavaFormatter {
         files,
         streams.log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly = false,
         sortImports,
@@ -121,6 +126,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -133,6 +139,7 @@ object JavaFormatter {
         files,
         streams.log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly = true,
         sortImports,
@@ -170,6 +177,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -186,6 +194,7 @@ object JavaFormatter {
         filesToCheck.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -204,6 +213,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -218,6 +228,7 @@ object JavaFormatter {
         sources,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -232,6 +243,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -247,6 +259,7 @@ object JavaFormatter {
           filesToFormat,
           log,
           options,
+          formatterClasspath,
           javaMaxHeap,
           fixImportsOnly,
           sortImports,
@@ -261,6 +274,7 @@ object JavaFormatter {
       sources: Set[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -272,6 +286,7 @@ object JavaFormatter {
         sources.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -283,6 +298,7 @@ object JavaFormatter {
         changed.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -339,19 +355,6 @@ object JavaFormatter {
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
 
-  private def classpathFrom(loader: ClassLoader): List[String] =
-    loader match {
-      case null                      => Nil
-      case urlLoader: URLClassLoader =>
-        urlLoader.getURLs.iterator.map(url => new File(url.toURI).getAbsolutePath).toList ++ classpathFrom(
-          loader.getParent)
-      case _ =>
-        classpathFrom(loader.getParent)
-    }
-
-  private lazy val formatterClasspath: String =
-    classpathFrom(getClass.getClassLoader).distinct.mkString(File.pathSeparator)
-
   private lazy val javaBin: String = {
     val javaHomeSourceAndPath =
       sys.props
@@ -374,9 +377,11 @@ object JavaFormatter {
     javaExec.getAbsolutePath
   }
 
-  private def javaArgs(args: Seq[String], javaMaxHeap: Option[String]): Seq[String] =
+  private def javaArgs(args: Seq[String], formatterClasspath: Seq[File], javaMaxHeap: Option[String]): Seq[String] = {
+    val formatterClasspathString = formatterClasspath.map(_.getAbsolutePath).distinct.mkString(File.pathSeparator)
     javaMaxHeap.toList
-      .map(heap => s"-Xmx$heap") ++ JavaExports ++ Seq("-cp", formatterClasspath, GoogleJavaFormatMain) ++ args
+      .map(heap => s"-Xmx$heap") ++ JavaExports ++ Seq("-cp", formatterClasspathString, GoogleJavaFormatMain) ++ args
+  }
 
   private def renderJavaArg(arg: String): String =
     if (arg.isEmpty || arg.exists(_.isWhitespace) || arg.contains("\"")) {
@@ -385,9 +390,13 @@ object JavaFormatter {
       arg
     }
 
-  private def runCli(args: Seq[String], log: Logger, javaMaxHeap: Option[String]): CliResult =
+  private def runCli(
+      args: Seq[String],
+      formatterClasspath: Seq[File],
+      log: Logger,
+      javaMaxHeap: Option[String]): CliResult =
     IO.withTemporaryFile("google-java-format-java", ".args") { argFile =>
-      IO.writeLines(argFile, javaArgs(args, javaMaxHeap).map(renderJavaArg))
+      IO.writeLines(argFile, javaArgs(args, formatterClasspath, javaMaxHeap).map(renderJavaArg))
       val stdout = Vector.newBuilder[String]
       val stderr = Vector.newBuilder[String]
       val exitCode = Process(Seq(javaBin, s"@${argFile.getAbsolutePath}")).!(ProcessLogger(stdout += _, stderr += _))
@@ -399,6 +408,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -412,7 +422,7 @@ object JavaFormatter {
       cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
         "--dry-run",
         "--set-exit-if-changed") ++ sources.map(_.getAbsolutePath)
-    val result = runCli(args, log, javaMaxHeap)
+    val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     val changed = result.stdout.iterator.map(path => file(path)).toSet
     result.exitCode match {
       case 0 | 1 =>
@@ -430,6 +440,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -441,7 +452,7 @@ object JavaFormatter {
     val args =
       cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
         "--replace") ++ sources.map(_.getAbsolutePath)
-    val result = runCli(args, log, javaMaxHeap)
+    val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     if (result.exitCode != 0) {
       result.stderr.foreach(line => log.error(line))
       result.stdout.foreach(line => log.error(line))

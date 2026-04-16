@@ -37,6 +37,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
 * The `javafmtFormatJavadoc` setting controls whether Javadoc comments are reformatted (`true` by default).
+* The `javafmtFormatterCompatibleJavaVersion` setting selects which `google-java-format` runtime line to use (`21` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
 This plugin requires sbt 1.3.0+.
@@ -66,6 +67,8 @@ To make the plugin launch the formatter with a different Java installation, set 
 
 If both are set, `sbt-javafmt.java.home` takes precedence.
 
+The selected Java home must still be compatible with the `google-java-format` runtime line chosen by `javafmtFormatterCompatibleJavaVersion`.
+
 Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
 
 ```scala
@@ -83,6 +86,7 @@ ThisBuild / javafmtJavaMaxHeap := None
 The plugin also exposes a few `google-java-format` CLI options directly:
 
 ```scala
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
 ThisBuild / javafmtSortImports := true
 ThisBuild / javafmtRemoveUnusedImports := true
 ThisBuild / javafmtReflowLongStrings := true
@@ -90,6 +94,12 @@ ThisBuild / javafmtFormatJavadoc := true
 ```
 
 Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
+
+`javafmtFormatterCompatibleJavaVersion` maps to these formatter versions:
+
+- `11` -> `google-java-format 1.24.0`
+- `17` -> `google-java-format 1.28.0`
+- `21` -> `google-java-format 1.35.0`
 
 `javafmtOptions` is still available for compatibility, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
 
