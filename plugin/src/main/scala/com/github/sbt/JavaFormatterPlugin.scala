@@ -259,7 +259,7 @@ object JavaFormatterPlugin extends AutoPlugin {
     compatibleJavaVersion match {
       case 11    => "1.24.0"
       case 17    => "1.28.0"
-      case 21    => "1.35.0"
+      case 21    => "1.34.0"
       case other =>
         throw new MessageOnlyException(
           s"Unsupported javafmtFormatterCompatibleJavaVersion: $other. Expected one of: 11, 17, 21.")
