@@ -130,6 +130,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         .build(),
       javafmt := {
         val streamz = streams.value
+        val projectId = thisProjectRef.value.project
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
@@ -141,6 +142,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val removeUnusedImports = javafmtRemoveUnusedImports.value
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter(
+          projectId,
           sD,
           iF,
           eF,
@@ -155,6 +157,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       },
       javafmtCheck := {
         val streamz = streams.value
+        val projectId = thisProjectRef.value.project
         val baseDir = (ThisBuild / baseDirectory).value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
@@ -167,6 +170,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val removeUnusedImports = javafmtRemoveUnusedImports.value
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.check(
+          projectId,
           baseDir,
           sD,
           iF,
@@ -182,6 +186,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       },
       javafmtFixImports := {
         val streamz = streams.value
+        val projectId = thisProjectRef.value.project
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
@@ -193,6 +198,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val removeUnusedImports = javafmtRemoveUnusedImports.value
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImports(
+          projectId,
           sD,
           iF,
           eF,
@@ -207,6 +213,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       },
       javafmtFixImportsCheck := {
         val streamz = streams.value
+        val projectId = thisProjectRef.value.project
         val baseDir = (ThisBuild / baseDirectory).value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
@@ -219,6 +226,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val removeUnusedImports = javafmtRemoveUnusedImports.value
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImportsCheck(
+          projectId,
           baseDir,
           sD,
           iF,
