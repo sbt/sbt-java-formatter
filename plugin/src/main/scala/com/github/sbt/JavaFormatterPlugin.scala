@@ -37,6 +37,9 @@ object JavaFormatterPlugin extends AutoPlugin {
   @transient
   private val javafmtFormatterClasspath =
     taskKey[Seq[File]]("Resolved classpath for the forked google-java-format CLI.")
+  @transient
+  private val javafmtInvocationId =
+    taskKey[String]("Internal invocation id for deduplicating formatter runtime mismatch hints.")
 
   object autoImport {
     @transient
@@ -131,6 +134,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmt := {
         val streamz = streams.value
         val projectId = thisProjectRef.value.project
+        val invocationId = javafmtInvocationId.value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
@@ -143,6 +147,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter(
           projectId,
+          invocationId,
           sD,
           iF,
           eF,
@@ -158,6 +163,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtCheck := {
         val streamz = streams.value
         val projectId = thisProjectRef.value.project
+        val invocationId = javafmtInvocationId.value
         val baseDir = (ThisBuild / baseDirectory).value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
@@ -171,6 +177,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.check(
           projectId,
+          invocationId,
           baseDir,
           sD,
           iF,
@@ -187,6 +194,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtFixImports := {
         val streamz = streams.value
         val projectId = thisProjectRef.value.project
+        val invocationId = javafmtInvocationId.value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
@@ -199,6 +207,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImports(
           projectId,
+          invocationId,
           sD,
           iF,
           eF,
@@ -214,6 +223,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtFixImportsCheck := {
         val streamz = streams.value
         val projectId = thisProjectRef.value.project
+        val invocationId = javafmtInvocationId.value
         val baseDir = (ThisBuild / baseDirectory).value
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
@@ -227,6 +237,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImportsCheck(
           projectId,
+          invocationId,
           baseDir,
           sD,
           iF,
@@ -251,6 +262,7 @@ object JavaFormatterPlugin extends AutoPlugin {
 
   def notToBeScopedSettings: Seq[Setting[?]] =
     List(
+      javafmtInvocationId := java.util.UUID.randomUUID().toString,
       ivyConfigurations += JavafmtRuntime,
       libraryDependencies +=
         ("com.google.googlejavaformat" % "google-java-format" % formatterVersionForCompatibleJavaVersion(
