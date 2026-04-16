@@ -355,6 +355,33 @@ object JavaFormatter {
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
 
+  private def logCliFailure(result: CliResult, log: Logger): Unit = {
+    result.stderr.foreach(line => log.error(line))
+    result.stdout.foreach(line => log.error(line))
+    incompatibleJavaRuntimeHelp(result).foreach(message => log.info(message))
+  }
+
+  private def incompatibleJavaRuntimeHelp(result: CliResult): Option[String] = {
+    val output = (result.stderr ++ result.stdout).mkString("\n")
+
+    val unsupportedClassVersion =
+      output.contains("UnsupportedClassVersionError") ||
+      output.contains("compiled by a more recent version of the Java Runtime")
+
+    val missingNewerJavacClass =
+      output.contains("NoClassDefFoundError: com/sun/tools/javac/tree/JCTree$JCAnyPattern") ||
+      output.contains("ClassNotFoundException: com.sun.tools.javac.tree.JCTree$JCAnyPattern")
+
+    if (unsupportedClassVersion || missingNewerJavacClass) {
+      Some(
+        s"\n\n\nThe forked google-java-format JVM appears to be running on an incompatible Java version. " +
+        s"Either set the $JavaHomeEnvVar environment variable or -D$JavaHomeProperty=... to point the formatter to a compatible JDK, " +
+        s"or lower the sbt setting ThisBuild / javafmtFormatterCompatibleJavaVersion to match the available Java runtime.\n\n\n")
+    } else {
+      None
+    }
+  }
+
   private lazy val javaBin: String = {
     val javaHomeSourceAndPath =
       sys.props
@@ -426,11 +453,14 @@ object JavaFormatter {
     val changed = result.stdout.iterator.map(path => file(path)).toSet
     result.exitCode match {
       case 0 | 1 =>
+        if (result.exitCode == 1 && changed.isEmpty) {
+          logCliFailure(result, log)
+          throw new MessageOnlyException("google-java-format check failed")
+        }
         changed
       case _ =>
         if (warnOnFailure) {
-          result.stderr.foreach(line => log.error(line))
-          result.stdout.foreach(line => log.error(line))
+          logCliFailure(result, log)
         }
         throw new MessageOnlyException("google-java-format check failed")
     }
