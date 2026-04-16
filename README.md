@@ -69,6 +69,18 @@ If both are set, `sbt-javafmt.java.home` takes precedence.
 
 The selected Java home must still be compatible with the `google-java-format` runtime line chosen by `javafmtFormatterCompatibleJavaVersion`.
 
+This is useful if your build runs sbt on one JDK but needs to launch the formatter on another one. For example, you can keep sbt on Java 11 and still run the formatter on a newer JDK by setting `SBT_JAVAFMT_JAVA_HOME` or `-Dsbt-javafmt.java.home=...`.
+
+For example:
+
+```scala
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
+```
+
+```bash
+SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-21 sbt javafmt
+```
+
 Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
 
 ```scala
@@ -100,6 +112,11 @@ Set any of them to `false` to pass the corresponding `--skip-...` flag to `googl
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
 - `21` -> `google-java-format 1.35.0`
+
+If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
+
+- lower `ThisBuild / javafmtFormatterCompatibleJavaVersion`
+- or point the formatter to a newer JDK via `SBT_JAVAFMT_JAVA_HOME` or `-Dsbt-javafmt.java.home=...`
 
 `javafmtOptions` is still available for compatibility, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
 
