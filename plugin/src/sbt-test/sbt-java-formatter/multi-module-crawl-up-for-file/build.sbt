@@ -1,3 +1,5 @@
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 11
+
 lazy val sbtJavaFormatter = project
   .in(file("."))
   .aggregate(inner)
