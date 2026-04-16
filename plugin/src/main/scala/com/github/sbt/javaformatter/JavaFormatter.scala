@@ -378,11 +378,20 @@ object JavaFormatter {
       output.contains("NoClassDefFoundError: com/sun/tools/javac/tree/JCTree$JCAnyPattern") ||
       output.contains("ClassNotFoundException: com.sun.tools.javac.tree.JCTree$JCAnyPattern")
 
+    val olderFormatterOnNewerJdk =
+      output.contains("NoSuchMethodError") &&
+      (output.contains("com.sun.tools.javac.") || output.contains("jdk.compiler"))
+
     if (unsupportedClassVersion || missingNewerJavacClass) {
       Some(
         s"\n\n\nThe forked google-java-format JVM appears to be running on an incompatible Java version. " +
         s"Either set the $JavaHomeEnvVar environment variable or -D$JavaHomeProperty=... to point the formatter to a compatible JDK, " +
         s"or lower the sbt setting ThisBuild / javafmtFormatterCompatibleJavaVersion to match the available Java runtime.\n\n\n")
+    } else if (olderFormatterOnNewerJdk) {
+      Some(
+        s"\n\n\nThe selected google-java-format runtime appears to be too old for the Java version used to launch the formatter JVM. " +
+        s"Try increasing the sbt setting ThisBuild / javafmtFormatterCompatibleJavaVersion, " +
+        s"or point the formatter to an older compatible JDK via the $JavaHomeEnvVar environment variable or -D$JavaHomeProperty=....\n\n\n")
     } else {
       None
     }
