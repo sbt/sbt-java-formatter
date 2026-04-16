@@ -1,4 +1,4 @@
-# [sbt-java-formatter][] [![scaladex-badge][]][scaladex]
+# sbt-java-formatter [![scaladex-badge][]][scaladex]
 
 [sbt-java-formatter]: https://github.com/sbt/sbt-java-formatter
 [scaladex]:           https://index.scala-lang.org/sbt/sbt-java-formatter
@@ -30,7 +30,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * `javafmtFixImportsAll` fixes Java imports only for all configurations (`Compile` and `Test` by default)
 * `javafmtFixImportsCheck` fails if Java imports need fixing
 * `javafmtFixImportsCheckAll` fails if Java imports need fixing in any configuration (`Compile` and `Test` by default)
-
+<br>
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
 * The `javafmtSortImports` setting controls whether imports are sorted (`true` by default).
@@ -74,11 +74,11 @@ This is useful if your build runs sbt on one JDK but needs to launch the formatt
 For example:
 
 ```scala
-ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
 ```
 
 ```bash
-SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-21 sbt javafmt
+SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 ```
 
 Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
@@ -111,7 +111,7 @@ Set any of them to `false` to pass the corresponding `--skip-...` flag to `googl
 
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
-- `21` -> `google-java-format 1.35.0`
+- `21` -> `google-java-format 1.35.0` (default)
 
 If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
 
