@@ -1,1 +1,1 @@
-// no settings needed
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 11

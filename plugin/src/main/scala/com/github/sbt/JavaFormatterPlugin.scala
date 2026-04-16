@@ -32,6 +32,12 @@ object AutomateJavaFormatterPlugin extends AutoPlugin {
 
 object JavaFormatterPlugin extends AutoPlugin {
 
+  private val JavafmtRuntime = config("javafmtRuntime").hide.extend(Runtime)
+
+  @transient
+  private val javafmtFormatterClasspath =
+    taskKey[Seq[File]]("Resolved classpath for the forked google-java-format CLI.")
+
   object autoImport {
     @transient
     val javafmt: TaskKey[Unit] = taskKey("Format Java sources")
@@ -58,6 +64,9 @@ object JavaFormatterPlugin extends AutoPlugin {
       "Execute the javafmtFixImportsCheck task for all configurations in which it is enabled. " +
       "(By default this means the Compile and Test configurations.)")
     val javafmtOnCompile = settingKey[Boolean]("Format Java source files on compile, off by default.")
+    val javafmtFormatterCompatibleJavaVersion =
+      settingKey[Int](
+        "Selects the google-java-format runtime line by compatible Java version. Supported values: 11, 17, 21.")
     val javafmtStyle =
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
     val javafmtJavaMaxHeap =
@@ -103,6 +112,7 @@ object JavaFormatterPlugin extends AutoPlugin {
   override def globalSettings: Seq[Def.Setting[?]] =
     Seq(
       javafmtOnCompile := false,
+      javafmtFormatterCompatibleJavaVersion := 21,
       javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
       javafmtJavaMaxHeap := Some("256m"),
       javafmtSortImports := true,
@@ -125,6 +135,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
         val options = javafmtOptions.value
+        val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
@@ -136,6 +147,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           streamz,
           cache,
           options,
+          formatterClasspath,
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
@@ -149,6 +161,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
         val options = javafmtOptions.value
+        val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
@@ -161,6 +174,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           streamz,
           cache,
           options,
+          formatterClasspath,
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
@@ -173,6 +187,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
         val options = javafmtOptions.value
+        val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
@@ -184,6 +199,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           streamz,
           cache,
           options,
+          formatterClasspath,
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
@@ -197,6 +213,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
         val options = javafmtOptions.value
+        val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
@@ -209,6 +226,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           streamz,
           cache,
           options,
+          formatterClasspath,
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
@@ -224,7 +242,28 @@ object JavaFormatterPlugin extends AutoPlugin {
       compile / compileInputs := (compile / compileInputs).dependsOn(javafmtDoFormatOnCompile).value)
 
   def notToBeScopedSettings: Seq[Setting[?]] =
-    List(javafmt / includeFilter := "*.java")
+    List(
+      ivyConfigurations += JavafmtRuntime,
+      libraryDependencies +=
+        ("com.google.googlejavaformat" % "google-java-format" % formatterVersionForCompatibleJavaVersion(
+          javafmtFormatterCompatibleJavaVersion.value) % JavafmtRuntime.name).classifier("all-deps").intransitive(),
+      javafmtFormatterClasspath := update.value
+        .matching(
+          configurationFilter(JavafmtRuntime.name) && moduleFilter(
+            organization = "com.google.googlejavaformat",
+            name = "google-java-format"))
+        .distinct,
+      javafmt / includeFilter := "*.java")
+
+  private def formatterVersionForCompatibleJavaVersion(compatibleJavaVersion: Int): String =
+    compatibleJavaVersion match {
+      case 11    => "1.24.0"
+      case 17    => "1.28.0"
+      case 21    => "1.35.0"
+      case other =>
+        throw new MessageOnlyException(
+          s"Unsupported javafmtFormatterCompatibleJavaVersion: $other. Expected one of: 11, 17, 21.")
+    }
 
   @transient
   private val javafmtDoFormatOnCompile =

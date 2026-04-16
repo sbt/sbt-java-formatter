@@ -1,0 +1,1 @@
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 17

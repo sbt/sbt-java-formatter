@@ -17,7 +17,7 @@
 package com.github.sbt.javaformatter
 
 import java.io.File
-import java.net.URLClassLoader
+import java.util.concurrent.atomic.AtomicBoolean
 
 import _root_.sbt.Keys._
 import _root_.sbt._
@@ -32,6 +32,7 @@ object JavaFormatter {
   private val GoogleJavaFormatMain = "com.google.googlejavaformat.java.Main"
   private val JavaHomeEnvVar = "SBT_JAVAFMT_JAVA_HOME"
   private val JavaHomeProperty = "sbt-javafmt.java.home"
+  private val incompatibleJavaRuntimeHelpLogged = new AtomicBoolean(false)
 
   private val JavaExports = Seq("api", "code", "file", "parser", "tree", "util").map { exportedPackage =>
     s"--add-exports=jdk.compiler/com.sun.tools.javac.$exportedPackage=ALL-UNNAMED"
@@ -44,6 +45,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -54,6 +56,7 @@ object JavaFormatter {
       files,
       streams.log,
       options,
+      formatterClasspath,
       javaMaxHeap,
       fixImportsOnly = false,
       sortImports,
@@ -68,6 +71,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -78,6 +82,7 @@ object JavaFormatter {
       files,
       streams.log,
       options,
+      formatterClasspath,
       javaMaxHeap,
       fixImportsOnly = true,
       sortImports,
@@ -93,6 +98,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -105,6 +111,7 @@ object JavaFormatter {
         files,
         streams.log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly = false,
         sortImports,
@@ -121,6 +128,7 @@ object JavaFormatter {
       streams: TaskStreams,
       cacheStoreFactory: CacheStoreFactory,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
@@ -133,6 +141,7 @@ object JavaFormatter {
         files,
         streams.log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly = true,
         sortImports,
@@ -170,6 +179,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -186,6 +196,7 @@ object JavaFormatter {
         filesToCheck.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -204,6 +215,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -218,6 +230,7 @@ object JavaFormatter {
         sources,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -232,6 +245,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -247,6 +261,7 @@ object JavaFormatter {
           filesToFormat,
           log,
           options,
+          formatterClasspath,
           javaMaxHeap,
           fixImportsOnly,
           sortImports,
@@ -261,6 +276,7 @@ object JavaFormatter {
       sources: Set[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -272,6 +288,7 @@ object JavaFormatter {
         sources.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -283,6 +300,7 @@ object JavaFormatter {
         changed.toList,
         log,
         options,
+        formatterClasspath,
         javaMaxHeap,
         fixImportsOnly,
         sortImports,
@@ -339,18 +357,45 @@ object JavaFormatter {
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
 
-  private def classpathFrom(loader: ClassLoader): List[String] =
-    loader match {
-      case null                      => Nil
-      case urlLoader: URLClassLoader =>
-        urlLoader.getURLs.iterator.map(url => new File(url.toURI).getAbsolutePath).toList ++ classpathFrom(
-          loader.getParent)
-      case _ =>
-        classpathFrom(loader.getParent)
+  private def logCliFailure(result: CliResult, log: Logger): Unit = {
+    result.stderr.foreach(line => log.error(line))
+    result.stdout.foreach(line => log.error(line))
+    incompatibleJavaRuntimeHelp(result).foreach { message =>
+      if (incompatibleJavaRuntimeHelpLogged.compareAndSet(false, true)) {
+        log.info(message)
+      }
     }
+  }
 
-  private lazy val formatterClasspath: String =
-    classpathFrom(getClass.getClassLoader).distinct.mkString(File.pathSeparator)
+  private def incompatibleJavaRuntimeHelp(result: CliResult): Option[String] = {
+    val output = (result.stderr ++ result.stdout).mkString("\n")
+
+    val unsupportedClassVersion =
+      output.contains("UnsupportedClassVersionError") ||
+      output.contains("compiled by a more recent version of the Java Runtime")
+
+    val missingNewerJavacClass =
+      output.contains("NoClassDefFoundError: com/sun/tools/javac/tree/JCTree$JCAnyPattern") ||
+      output.contains("ClassNotFoundException: com.sun.tools.javac.tree.JCTree$JCAnyPattern")
+
+    val olderFormatterOnNewerJdk =
+      output.contains("NoSuchMethodError") &&
+      (output.contains("com.sun.tools.javac.") || output.contains("jdk.compiler"))
+
+    if (unsupportedClassVersion || missingNewerJavacClass) {
+      Some(
+        s"\n\n\nThe forked google-java-format JVM appears to be running on an incompatible Java version. " +
+        s"Either set the $JavaHomeEnvVar environment variable or -D$JavaHomeProperty=... to point the formatter to a compatible JDK, " +
+        s"or lower the sbt setting ThisBuild / javafmtFormatterCompatibleJavaVersion to match the available Java runtime.\n\n\n")
+    } else if (olderFormatterOnNewerJdk) {
+      Some(
+        s"\n\n\nThe selected google-java-format runtime appears to be too old for the Java version used to launch the formatter JVM. " +
+        s"Try increasing the sbt setting ThisBuild / javafmtFormatterCompatibleJavaVersion, " +
+        s"or point the formatter to an older compatible JDK via the $JavaHomeEnvVar environment variable or -D$JavaHomeProperty=....\n\n\n")
+    } else {
+      None
+    }
+  }
 
   private lazy val javaBin: String = {
     val javaHomeSourceAndPath =
@@ -374,9 +419,11 @@ object JavaFormatter {
     javaExec.getAbsolutePath
   }
 
-  private def javaArgs(args: Seq[String], javaMaxHeap: Option[String]): Seq[String] =
+  private def javaArgs(args: Seq[String], formatterClasspath: Seq[File], javaMaxHeap: Option[String]): Seq[String] = {
+    val formatterClasspathString = formatterClasspath.map(_.getAbsolutePath).distinct.mkString(File.pathSeparator)
     javaMaxHeap.toList
-      .map(heap => s"-Xmx$heap") ++ JavaExports ++ Seq("-cp", formatterClasspath, GoogleJavaFormatMain) ++ args
+      .map(heap => s"-Xmx$heap") ++ JavaExports ++ Seq("-cp", formatterClasspathString, GoogleJavaFormatMain) ++ args
+  }
 
   private def renderJavaArg(arg: String): String =
     if (arg.isEmpty || arg.exists(_.isWhitespace) || arg.contains("\"")) {
@@ -385,9 +432,13 @@ object JavaFormatter {
       arg
     }
 
-  private def runCli(args: Seq[String], log: Logger, javaMaxHeap: Option[String]): CliResult =
+  private def runCli(
+      args: Seq[String],
+      formatterClasspath: Seq[File],
+      log: Logger,
+      javaMaxHeap: Option[String]): CliResult =
     IO.withTemporaryFile("google-java-format-java", ".args") { argFile =>
-      IO.writeLines(argFile, javaArgs(args, javaMaxHeap).map(renderJavaArg))
+      IO.writeLines(argFile, javaArgs(args, formatterClasspath, javaMaxHeap).map(renderJavaArg))
       val stdout = Vector.newBuilder[String]
       val stderr = Vector.newBuilder[String]
       val exitCode = Process(Seq(javaBin, s"@${argFile.getAbsolutePath}")).!(ProcessLogger(stdout += _, stderr += _))
@@ -399,6 +450,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -412,15 +464,18 @@ object JavaFormatter {
       cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
         "--dry-run",
         "--set-exit-if-changed") ++ sources.map(_.getAbsolutePath)
-    val result = runCli(args, log, javaMaxHeap)
+    val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     val changed = result.stdout.iterator.map(path => file(path)).toSet
     result.exitCode match {
       case 0 | 1 =>
+        if (result.exitCode == 1 && changed.isEmpty) {
+          logCliFailure(result, log)
+          throw new MessageOnlyException("google-java-format check failed")
+        }
         changed
       case _ =>
         if (warnOnFailure) {
-          result.stderr.foreach(line => log.error(line))
-          result.stdout.foreach(line => log.error(line))
+          logCliFailure(result, log)
         }
         throw new MessageOnlyException("google-java-format check failed")
     }
@@ -430,6 +485,7 @@ object JavaFormatter {
       sources: Seq[File],
       log: Logger,
       options: JavaFormatterOptions,
+      formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       fixImportsOnly: Boolean,
       sortImports: Boolean,
@@ -441,7 +497,7 @@ object JavaFormatter {
     val args =
       cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
         "--replace") ++ sources.map(_.getAbsolutePath)
-    val result = runCli(args, log, javaMaxHeap)
+    val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     if (result.exitCode != 0) {
       result.stderr.foreach(line => log.error(line))
       result.stdout.foreach(line => log.error(line))

@@ -16,6 +16,7 @@ lazy val plugin = project
       ScmInfo(url("https://github.com/sbt/sbt-java-formatter"), "scm:git:git@github.com:sbt/sbt-java-formatter.git")),
     developers := List(
       Developer("ktoso", "Konrad 'ktoso' Malawski", "<ktoso@project13.pl>", url("https://github.com/ktoso"))),
+    // Compile the plugin against the Java 11-compatible google-java-format API line; actual formatter execution uses a separately selected forked runtime.
     libraryDependencies ++= Seq("com.google.googlejavaformat" % "google-java-format" % "1.24.0"),
     startYear := Some(2015),
     description := "Formats Java code in your project.",
