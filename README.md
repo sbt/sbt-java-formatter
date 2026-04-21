@@ -38,6 +38,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
 * The `javafmtFormatJavadoc` setting controls whether Javadoc comments are reformatted (`true` by default).
+* The `javafmtReorderModifiers` setting controls whether modifiers are reordered into JLS order (`true` by default).
 * The `javafmtFormatterCompatibleJavaVersion` setting selects which `google-java-format` runtime line to use (`21` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
@@ -114,6 +115,7 @@ ThisBuild / javafmtSortImports := true
 ThisBuild / javafmtRemoveUnusedImports := true
 ThisBuild / javafmtReflowLongStrings := true
 ThisBuild / javafmtFormatJavadoc := true
+ThisBuild / javafmtReorderModifiers := true
 ```
 
 Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
@@ -129,11 +131,7 @@ If the selected formatter runtime is newer than the Java used to launch the form
 - lower `ThisBuild / javafmtFormatterCompatibleJavaVersion`
 - or point the formatter to a newer JDK via `SBT_JAVAFMT_JAVA_HOME` or `-Dsbt-javafmt.java.home=...`
 
-`javafmtOptions` is still available for compatibility, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
-
-`JavaFormatterOptions.reorderModifiers()` currently has no effect in this plugin.
-
-The plugin now runs `google-java-format` via its CLI in a forked JVM, and the released `google-java-format` CLI used here [does not yet support a corresponding `--skip-reordering-modifiers` flag](https://github.com/google/google-java-format/pull/1373).
+`javafmtOptions` is still available for compatibility with upstream `JavaFormatterOptions`, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
 
 If you want to tweak the format, take a minute to consider whether it is really worth it, and have a look at the motivations in the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you decide you really need more flexibility, you could consider other plugins such as the [sbt-checkstyle-plugin](https://github.com/etsy/sbt-checkstyle-plugin)

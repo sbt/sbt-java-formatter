@@ -82,8 +82,10 @@ object JavaFormatterPlugin extends AutoPlugin {
       settingKey[Boolean]("Whether google-java-format should reflow long string literals. Enabled by default.")
     val javafmtFormatJavadoc =
       settingKey[Boolean]("Whether google-java-format should format Javadoc comments. Enabled by default.")
+    val javafmtReorderModifiers =
+      settingKey[Boolean]("Whether google-java-format should reorder modifiers into JLS order. Enabled by default.")
     val javafmtOptions = settingKey[JavaFormatterOptions](
-      "Compatibility setting for upstream JavaFormatterOptions. Prefer the dedicated javafmt... settings; reorderModifiers() currently has no effect with the released google-java-format CLI used by this plugin.")
+      "Compatibility setting for upstream JavaFormatterOptions. Prefer the dedicated javafmt... settings where available.")
   }
 
   import autoImport._
@@ -121,7 +123,8 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtSortImports := true,
       javafmtRemoveUnusedImports := true,
       javafmtReflowLongStrings := true,
-      javafmtFormatJavadoc := true)
+      javafmtFormatJavadoc := true,
+      javafmtReorderModifiers := true)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
@@ -130,6 +133,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         .builder()
         .style(javafmtStyle.value)
         .formatJavadoc(javafmtFormatJavadoc.value)
+        .reorderModifiers(javafmtReorderModifiers.value)
         .build(),
       javafmt := {
         val streamz = streams.value
