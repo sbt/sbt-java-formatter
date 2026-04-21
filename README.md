@@ -82,6 +82,16 @@ ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
 SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 ```
 
+> [!NOTE]
+> Many projects use Java 17 as their baseline today. If that is true for your build, `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` is often the simplest setup.
+>
+> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.35.0) are:
+>
+> - [Initial support for import module in google-java-format](https://github.com/google/google-java-format/commit/6afe380707ec16884ec2761763ccec998de403d1)
+> - [Support Instance Main Methods in google-java-format](https://github.com/google/google-java-format/commit/737b0032b3a18eb6e458271ea440098c166f6c2d)
+>
+> If you do not use these language features, setting `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` lets sbt-java-formatter work out of the box on CI servers and developer machines that run sbt on Java 17.
+
 Use `javafmtJavaMaxHeap` to control the maximum heap size passed to that JVM:
 
 ```scala
