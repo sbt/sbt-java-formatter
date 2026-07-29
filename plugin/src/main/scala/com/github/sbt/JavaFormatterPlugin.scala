@@ -143,7 +143,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -173,7 +174,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -203,7 +205,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -233,7 +236,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -288,6 +292,17 @@ object JavaFormatterPlugin extends AutoPlugin {
         throw new MessageOnlyException(
           s"Unsupported javafmtFormatterCompatibleJavaVersion: $other. Expected one of: 11, 17, 21.")
     }
+
+  private def validateOptions(options: JavaFormatterOptions, compatibleJavaVersion: Int): JavaFormatterOptions = {
+    if (!options.reorderModifiers() && compatibleJavaVersion != 21) {
+      throw new MessageOnlyException(
+        "Disabling modifier reordering requires " +
+        "ThisBuild / javafmtFormatterCompatibleJavaVersion := 21 " +
+        "because the Java 11 and Java 17 formatter runtime lines do not support " +
+        "--skip-reordering-modifiers.")
+    }
+    options
+  }
 
   @transient
   private val javafmtDoFormatOnCompile =

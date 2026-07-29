@@ -1,2 +1,2 @@
-ThisBuild / javafmtFormatterCompatibleJavaVersion := 11
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
 ThisBuild / javafmtReorderModifiers := false

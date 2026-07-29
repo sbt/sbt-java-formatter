@@ -38,7 +38,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
 * The `javafmtFormatJavadoc` setting controls whether Javadoc comments are reformatted (`true` by default).
-* The `javafmtReorderModifiers` setting controls whether modifiers are reordered into JLS order (`true` by default).
+* The `javafmtReorderModifiers` setting controls whether modifiers are reordered into JLS order (`true` by default). Disabling it requires `javafmtFormatterCompatibleJavaVersion := 21`.
 * The `javafmtFormatterCompatibleJavaVersion` setting selects which `google-java-format` runtime line to use (`21` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
