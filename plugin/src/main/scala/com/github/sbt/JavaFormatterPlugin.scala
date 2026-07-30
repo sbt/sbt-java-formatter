@@ -82,8 +82,10 @@ object JavaFormatterPlugin extends AutoPlugin {
       settingKey[Boolean]("Whether google-java-format should reflow long string literals. Enabled by default.")
     val javafmtFormatJavadoc =
       settingKey[Boolean]("Whether google-java-format should format Javadoc comments. Enabled by default.")
+    val javafmtReorderModifiers =
+      settingKey[Boolean]("Whether google-java-format should reorder modifiers into JLS order. Enabled by default.")
     val javafmtOptions = settingKey[JavaFormatterOptions](
-      "Compatibility setting for upstream JavaFormatterOptions. Prefer the dedicated javafmt... settings; reorderModifiers() currently has no effect with the released google-java-format CLI used by this plugin.")
+      "Compatibility setting for upstream JavaFormatterOptions. Prefer the dedicated javafmt... settings where available.")
   }
 
   import autoImport._
@@ -121,7 +123,8 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtSortImports := true,
       javafmtRemoveUnusedImports := true,
       javafmtReflowLongStrings := true,
-      javafmtFormatJavadoc := true)
+      javafmtFormatJavadoc := true,
+      javafmtReorderModifiers := true)
 
   def toBeScopedSettings: Seq[Setting[?]] =
     List(
@@ -130,6 +133,7 @@ object JavaFormatterPlugin extends AutoPlugin {
         .builder()
         .style(javafmtStyle.value)
         .formatJavadoc(javafmtFormatJavadoc.value)
+        .reorderModifiers(javafmtReorderModifiers.value)
         .build(),
       javafmt := {
         val streamz = streams.value
@@ -139,7 +143,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -169,7 +174,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -199,7 +205,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -229,7 +236,8 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
-        val options = javafmtOptions.value
+        val options =
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -279,11 +287,22 @@ object JavaFormatterPlugin extends AutoPlugin {
     compatibleJavaVersion match {
       case 11    => "1.24.0"
       case 17    => "1.28.0"
-      case 21    => "1.35.0"
+      case 21    => "1.36.0"
       case other =>
         throw new MessageOnlyException(
           s"Unsupported javafmtFormatterCompatibleJavaVersion: $other. Expected one of: 11, 17, 21.")
     }
+
+  private def validateOptions(options: JavaFormatterOptions, compatibleJavaVersion: Int): JavaFormatterOptions = {
+    if (!options.reorderModifiers() && compatibleJavaVersion != 21) {
+      throw new MessageOnlyException(
+        "Disabling modifier reordering requires " +
+        "ThisBuild / javafmtFormatterCompatibleJavaVersion := 21 " +
+        "because the Java 11 and Java 17 formatter runtime lines do not support " +
+        "--skip-reordering-modifiers.")
+    }
+    options
+  }
 
   @transient
   private val javafmtDoFormatOnCompile =

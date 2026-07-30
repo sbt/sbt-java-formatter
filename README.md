@@ -38,6 +38,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
 * The `javafmtFormatJavadoc` setting controls whether Javadoc comments are reformatted (`true` by default).
+* The `javafmtReorderModifiers` setting controls whether modifiers are reordered into JLS order (`true` by default). Disabling it requires `javafmtFormatterCompatibleJavaVersion := 21`.
 * The `javafmtFormatterCompatibleJavaVersion` setting selects which `google-java-format` runtime line to use (`21` by default).
 * The `javafmtJavaMaxHeap` setting controls the maximum heap passed to the forked `google-java-format` JVM (`Some("256m")` by default).
 
@@ -85,10 +86,11 @@ SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 > [!NOTE]
 > Many projects use Java 17 as their baseline today. If that is true for your build, `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` is often the simplest setup.
 >
-> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.35.0) are:
+> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.36.0) are:
 >
 > - [Initial support for import module in google-java-format](https://github.com/google/google-java-format/commit/6afe380707ec16884ec2761763ccec998de403d1)
 > - [Support Instance Main Methods in google-java-format](https://github.com/google/google-java-format/commit/737b0032b3a18eb6e458271ea440098c166f6c2d)
+> - [Initial support for Markdown documentation comments (`///`)](https://github.com/google/google-java-format/commit/53e2a763436abf00268f25ab59e481ca1d99cd29)
 >
 > If you do not use these language features, setting `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` lets sbt-java-formatter work out of the box on CI servers and developer machines that run sbt on Java 17.
 
@@ -114,6 +116,7 @@ ThisBuild / javafmtSortImports := true
 ThisBuild / javafmtRemoveUnusedImports := true
 ThisBuild / javafmtReflowLongStrings := true
 ThisBuild / javafmtFormatJavadoc := true
+ThisBuild / javafmtReorderModifiers := true
 ```
 
 Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
@@ -122,18 +125,14 @@ Set any of them to `false` to pass the corresponding `--skip-...` flag to `googl
 
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
-- `21` -> `google-java-format 1.35.0` (default)
+- `21` -> `google-java-format 1.36.0` (default)
 
 If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
 
 - lower `ThisBuild / javafmtFormatterCompatibleJavaVersion`
 - or point the formatter to a newer JDK via `SBT_JAVAFMT_JAVA_HOME` or `-Dsbt-javafmt.java.home=...`
 
-`javafmtOptions` is still available for compatibility, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
-
-`JavaFormatterOptions.reorderModifiers()` currently has no effect in this plugin.
-
-The plugin now runs `google-java-format` via its CLI in a forked JVM, and the released `google-java-format` CLI used here [does not yet support a corresponding `--skip-reordering-modifiers` flag](https://github.com/google/google-java-format/pull/1373).
+`javafmtOptions` is still available for compatibility with upstream `JavaFormatterOptions`, but the preferred sbt-facing configuration is through the dedicated `javafmt...` settings above.
 
 If you want to tweak the format, take a minute to consider whether it is really worth it, and have a look at the motivations in the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html).
 If you decide you really need more flexibility, you could consider other plugins such as the [sbt-checkstyle-plugin](https://github.com/etsy/sbt-checkstyle-plugin)
