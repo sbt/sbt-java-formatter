@@ -90,6 +90,7 @@ SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 >
 > - [Initial support for import module in google-java-format](https://github.com/google/google-java-format/commit/6afe380707ec16884ec2761763ccec998de403d1)
 > - [Support Instance Main Methods in google-java-format](https://github.com/google/google-java-format/commit/737b0032b3a18eb6e458271ea440098c166f6c2d)
+> - [Initial support for Markdown documentation comments (`///`)](https://github.com/google/google-java-format/commit/53e2a763436abf00268f25ab59e481ca1d99cd29)
 >
 > If you do not use these language features, setting `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` lets sbt-java-formatter work out of the box on CI servers and developer machines that run sbt on Java 17.
 
