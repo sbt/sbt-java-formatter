@@ -86,7 +86,7 @@ SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 > [!NOTE]
 > Many projects use Java 17 as their baseline today. If that is true for your build, `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` is often the simplest setup.
 >
-> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.36.0) are:
+> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.36.1) are:
 >
 > - [Initial support for import module in google-java-format](https://github.com/google/google-java-format/commit/6afe380707ec16884ec2761763ccec998de403d1)
 > - [Support Instance Main Methods in google-java-format](https://github.com/google/google-java-format/commit/737b0032b3a18eb6e458271ea440098c166f6c2d)
@@ -125,7 +125,7 @@ Set any of them to `false` to pass the corresponding `--skip-...` flag to `googl
 
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
-- `21` -> `google-java-format 1.36.0` (default)
+- `21` -> `google-java-format 1.36.1` (default)
 
 If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
 
