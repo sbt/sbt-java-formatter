@@ -1,0 +1,16 @@
+> javafmtFixImports
+> javafmtFixImportsCheck
+
+> set ThisBuild / javafmtSortImports := true
+-> javafmtFixImportsCheck
+> javafmtFixImports
+> javafmtFixImportsCheck
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected-sorted/com/lightbend/BadFormatting.java
+
+> set ThisBuild / javafmtRemoveUnusedImports := true
+-> javafmtFixImportsCheck
+> javafmtFixImports
+> javafmtFixImportsCheck
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+
+-> javafmtCheck

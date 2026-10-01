@@ -2,3 +2,11 @@
 > javafmt
 
 $ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+
+# Changing an option must invalidate the cache even when sources are unchanged.
+> javafmtCheck
+> set ThisBuild / javafmtReflowLongStrings := true
+-> javafmtCheck
+> javafmt
+> javafmtCheck
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected-enabled/com/lightbend/BadFormatting.java

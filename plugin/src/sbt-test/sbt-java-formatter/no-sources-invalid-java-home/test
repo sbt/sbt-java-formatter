@@ -1,0 +1,24 @@
+# Invalid paths must be tolerated just like missing installations when there are no Java sources.
+> useUnresolvableJavaHome
+> javafmtAll
+> javafmtCheckAll
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+> compile
+> Test / compile
+
+> useInvalidJavaHome
+> javafmtAll
+> javafmtCheckAll
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+> compile
+> Test / compile
+
+# A real Java source must still report the invalid installation.
+> addJavaSource
+> expectMissingJavaLauncher
+> restoreJavaHome
+> javafmtAll
+> javafmtCheckAll
+> compile

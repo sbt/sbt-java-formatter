@@ -1,0 +1,43 @@
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+> rememberImportsCache
+
+# Unsupported full-formatting flags must not be passed to the Java 11 formatter.
+> set ThisBuild / javafmtMaxLineLength := 120
+> set ThisBuild / javafmtReorderModifiers := false
+> set ThisBuild / javafmtFormatJavadoc := false
+> set ThisBuild / javafmtReflowLongStrings := false
+> javafmtFixImportsCheckAll
+> javafmtFixImportsAll
+> expectSameImportsCache
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+> set expectedCheckMessage := "A custom javafmtMaxLineLength requires ThisBuild / javafmtFormatterCompatibleJavaVersion := 21"
+> expectCheckFailure
+
+# Irrelevant invalid widths must not be validated or invalidate the import-only cache.
+> set ThisBuild / javafmtMaxLineLength := 0
+> javafmtFixImportsCheckAll
+> javafmtFixImportsAll
+> expectSameImportsCache
+> set ThisBuild / javafmtMaxLineLength := -1
+> javafmtFixImportsCheckAll
+> javafmtFixImportsAll
+> expectSameImportsCache
+
+# With a cold cache, import-only formatting must still work with these settings.
+> clean
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+
+> set ThisBuild / javafmtMaxLineLength := 100
+> set expectedCheckMessage := "Disabling modifier reordering requires ThisBuild / javafmtFormatterCompatibleJavaVersion := 21"
+> expectCheckFailure
+
+# With valid full-formatting settings, the imports-only result must still need formatting.
+> set ThisBuild / javafmtReorderModifiers := true
+> set ThisBuild / javafmtFormatJavadoc := true
+> set ThisBuild / javafmtReflowLongStrings := true
+> set expectedCheckMessage := "1 file must be formatted"
+> expectCheckFailure

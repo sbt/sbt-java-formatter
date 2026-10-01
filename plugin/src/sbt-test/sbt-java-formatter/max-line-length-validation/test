@@ -1,0 +1,31 @@
+> expectDefaultLineLength
+> javafmt
+> javafmtCheck
+
+> set ThisBuild / javafmtMaxLineLength := 0
+> expectFormatFailure
+> expectCheckFailure
+> javafmtFixImports
+> javafmtFixImportsCheck
+
+> set ThisBuild / javafmtMaxLineLength := -1
+> expectFormatFailure
+> expectCheckFailure
+> javafmtFixImports
+> javafmtFixImportsCheck
+
+> set ThisBuild / javafmtMaxLineLength := 120
+> set expectedMessage := "A custom javafmtMaxLineLength requires ThisBuild / javafmtFormatterCompatibleJavaVersion := 21"
+> expectFormatFailure
+> expectCheckFailure
+> javafmtFixImports
+> javafmtFixImportsCheck
+
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+> expectFormatFailure
+> expectCheckFailure
+
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 11
+> set ThisBuild / javafmtMaxLineLength := 100
+> javafmt
+> javafmtCheck

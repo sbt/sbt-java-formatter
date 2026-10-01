@@ -1,0 +1,11 @@
+# The Java 17 formatter cannot run on Java 11. Cached success must not hide this mismatch.
+> javafmt
+> javafmtCheck
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+-> javafmtCheck
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 11
+> javafmtCheck
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+-> javafmt
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 11
+> javafmtCheck

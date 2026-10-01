@@ -10,3 +10,18 @@
 $ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
 
 $ exec diff src/test/java/com/lightbend/BadFormatting.java src/test/java-expected/com/lightbend/BadFormatting.java
+
+> javafmtCheckAll
+> set ThisBuild / javafmtStyle := com.google.googlejavaformat.java.JavaFormatterOptions.Style.GOOGLE
+-> javafmtCheckAll
+> Test / compile
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected-google/com/lightbend/BadFormatting.java
+$ exec diff src/test/java/com/lightbend/BadFormatting.java src/test/java-expected-google/com/lightbend/BadFormatting.java
+
+> set ThisBuild / javafmtStyle := com.google.googlejavaformat.java.JavaFormatterOptions.Style.AOSP
+-> javafmtCheckAll
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+$ exec diff src/test/java/com/lightbend/BadFormatting.java src/test/java-expected/com/lightbend/BadFormatting.java

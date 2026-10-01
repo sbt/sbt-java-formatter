@@ -1,0 +1,55 @@
+# Test 120-column string reflow before an earlier narrow width can split the literal.
+> set ThisBuild / javafmtMaxLineLength := 120
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-fresh-120/com/lightbend/LineLength.java
+
+# Restore unsplit input before testing width changes against warm caches.
+$ copy-file src/main/java-original/com/lightbend/LineLength.java src/main/java/com/lightbend/LineLength.java
+> set ThisBuild / javafmtMaxLineLength := 100
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-100/com/lightbend/LineLength.java
+
+# Setting changes must invalidate successful formatting and check results without touching sources.
+> set ThisBuild / javafmtMaxLineLength := 80
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-100/com/lightbend/LineLength.java
+-> javafmtCheckAll
+-> javafmtCheckAll
+> set ThisBuild / javafmtMaxLineLength := 100
+> javafmtCheckAll
+> set ThisBuild / javafmtMaxLineLength := 80
+-> javafmtCheckAll
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-80/com/lightbend/LineLength.java
+$ exec diff src/test/java/com/lightbend/LineLengthTest.java src/test/java-expected-80/com/lightbend/LineLengthTest.java
+
+# Widening the layout must also discard cached failures from the previous setting.
+> set ThisBuild / javafmtMaxLineLength := 120
+-> javafmtCheckAll
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-120/com/lightbend/LineLength.java
+
+> set ThisBuild / javafmtStyle := com.google.googlejavaformat.java.JavaFormatterOptions.Style.AOSP
+-> javafmtCheckAll
+> javafmtAll
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-aosp-120/com/lightbend/LineLength.java
+
+# The compatibility options setting must also participate in cache invalidation.
+> set Compile / javafmtOptions := com.google.googlejavaformat.java.JavaFormatterOptions.builder().style(com.google.googlejavaformat.java.JavaFormatterOptions.Style.GOOGLE).build()
+-> Compile / javafmtCheck
+> Compile / javafmt
+> Compile / javafmtCheck
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-120/com/lightbend/LineLength.java
+
+> set ThisBuild / javafmtStyle := com.google.googlejavaformat.java.JavaFormatterOptions.Style.GOOGLE
+> set ThisBuild / javafmtMaxLineLength := 100
+> set ThisBuild / javafmtOnCompile := true
+> Test / compile
+> javafmtCheckAll
+$ exec diff src/main/java/com/lightbend/LineLength.java src/main/java-expected-restored-100/com/lightbend/LineLength.java

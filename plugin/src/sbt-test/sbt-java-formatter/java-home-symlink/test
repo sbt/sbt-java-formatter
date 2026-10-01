@@ -1,0 +1,20 @@
+> useValidJavaHome
+> javafmtAll
+> javafmtCheckAll
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+
+# The property and source stamps stay unchanged; only the symlink target changes.
+> useMissingJavaLauncher
+> expectCheckFailure
+> expectFormatFailure
+> expectImportsCheckFailure
+> expectImportsFailure
+
+# Repointing the same alias to the valid JDK must also allow recovery.
+> useValidJavaHome
+> javafmtAll
+> javafmtCheckAll
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+> restoreJavaHome

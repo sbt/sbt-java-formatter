@@ -34,6 +34,7 @@ For available versions see [releases](https://github.com/sbt/sbt-java-formatter/
 
 * The `javafmtOnCompile` setting controls whether the formatter kicks in on compile (`false` by default).
 * The `javafmtStyle` setting defines the formatting style: Google Java Style (by default) or AOSP style.
+* The `javafmtMaxLineLength` setting controls the maximum line length (`100` by default). Custom values require `javafmtFormatterCompatibleJavaVersion := 21`.
 * The `javafmtSortImports` setting controls whether imports are sorted (`true` by default).
 * The `javafmtRemoveUnusedImports` setting controls whether unused imports are removed (`true` by default).
 * The `javafmtReflowLongStrings` setting controls whether long string literals are reflowed (`true` by default).
@@ -86,7 +87,7 @@ SBT_JAVAFMT_JAVA_HOME=/path/to/jdk-17 sbt javafmt
 > [!NOTE]
 > Many projects use Java 17 as their baseline today. If that is true for your build, `ThisBuild / javafmtFormatterCompatibleJavaVersion := 17` is often the simplest setup.
 >
-> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.36.1) are:
+> The main Java language support changes in `google-java-format` [after `v1.28.0`](https://github.com/google/google-java-format/compare/v1.28.0...v1.37.0) are:
 >
 > - [Initial support for import module in google-java-format](https://github.com/google/google-java-format/commit/6afe380707ec16884ec2761763ccec998de403d1)
 > - [Support Instance Main Methods in google-java-format](https://github.com/google/google-java-format/commit/737b0032b3a18eb6e458271ea440098c166f6c2d)
@@ -119,13 +120,35 @@ ThisBuild / javafmtFormatJavadoc := true
 ThisBuild / javafmtReorderModifiers := true
 ```
 
-Set any of them to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
+Set the Boolean formatter options to `false` to pass the corresponding `--skip-...` flag to `google-java-format`.
+
+Use `javafmtStyle` to select Google or AOSP style, which is equivalent to the CLI's `--style=google` / `--style=aosp` options (`--google-style` / `--aosp`):
+
+```scala
+import com.google.googlejavaformat.java.JavaFormatterOptions
+
+ThisBuild / javafmtStyle := JavaFormatterOptions.Style.GOOGLE
+// Or: ThisBuild / javafmtStyle := JavaFormatterOptions.Style.AOSP
+```
+
+Use `javafmtMaxLineLength` to customize the line width used for code, comments, and long string reflow:
+
+```scala
+ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
+ThisBuild / javafmtMaxLineLength := 120
+```
+
+The value must be positive. The default of `100` works with all formatter runtime lines; custom values require the Java 21 line because the Java 11 and Java 17 lines do not support `--max-line-length`.
+
+Only `javafmtStyle`, `javafmtSortImports`, and `javafmtRemoveUnusedImports` affect the output of the `javafmtFixImports...` tasks. Full-formatting options (line length, Javadoc formatting, modifier reordering, and long string reflow) are ignored and not validated for import-only tasks, even on older formatter runtime lines.
+
+Formatting and check caches are invalidated when effective formatter options or the formatter runtime change, even if source files have not changed. Import-only tasks use a separate cache from full-formatting tasks; changes to full-formatting options do not invalidate their cache.
 
 `javafmtFormatterCompatibleJavaVersion` maps to these formatter versions:
 
 - `11` -> `google-java-format 1.24.0`
 - `17` -> `google-java-format 1.28.0`
-- `21` -> `google-java-format 1.36.1` (default)
+- `21` -> `google-java-format 1.37.0` (default)
 
 If the selected formatter runtime is newer than the Java used to launch the formatter JVM, either:
 
