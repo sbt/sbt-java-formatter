@@ -1,0 +1,25 @@
+-> javafmtCheck
+-> javafmtFixImportsCheck
+> javafmtFixImports
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected-imports/com/lightbend/BadFormatting.java
+
+> javafmtFixImportsCheck
+-> javafmtCheck
+> javafmtFixImportsCheck
+> javafmtFixImports
+-> javafmtCheck
+
+> javafmt
+> javafmtCheck
+> javafmtFixImportsCheck
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+
+# Changing JVM arguments must not reuse a successful formatter result.
+> set ThisBuild / javafmtJavaMaxHeap := Some("invalid")
+-> javafmtCheck
+-> javafmt
+-> javafmtFixImportsCheck
+-> javafmtFixImports
+> set ThisBuild / javafmtJavaMaxHeap := Some("256m")
+> javafmtCheck
+> javafmtFixImportsCheck

@@ -9,3 +9,22 @@
 $ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
 
 $ exec diff src/test/java/com/lightbend/BadFormatting.java src/test/java-expected/com/lightbend/BadFormatting.java
+
+# Import-only tasks also ignore unsupported full-formatting settings on the Java 17 line.
+> set ThisBuild / javafmtMaxLineLength := 120
+> set ThisBuild / javafmtReorderModifiers := false
+> set ThisBuild / javafmtFormatJavadoc := false
+> set ThisBuild / javafmtReflowLongStrings := false
+> javafmtFixImportsAll
+> javafmtFixImportsCheckAll
+$ exec diff src/main/java/com/lightbend/BadFormatting.java src/main/java-expected/com/lightbend/BadFormatting.java
+$ exec diff src/test/java/com/lightbend/BadFormatting.java src/test/java-expected/com/lightbend/BadFormatting.java
+> expectCheckFailure
+> set ThisBuild / javafmtMaxLineLength := 100
+> set expectedCheckMessage := "Disabling modifier reordering requires ThisBuild / javafmtFormatterCompatibleJavaVersion := 21"
+> expectCheckFailure
+
+> set ThisBuild / javafmtReorderModifiers := true
+> set ThisBuild / javafmtFormatJavadoc := true
+> set ThisBuild / javafmtReflowLongStrings := true
+> javafmtCheckAll

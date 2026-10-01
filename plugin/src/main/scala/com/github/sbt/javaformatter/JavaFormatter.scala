@@ -16,7 +16,8 @@
 
 package com.github.sbt.javaformatter
 
-import java.io.File
+import java.io.{ File, IOException }
+import java.nio.file.InvalidPathException
 
 import _root_.sbt.Keys._
 import _root_.sbt._
@@ -27,6 +28,8 @@ import scala.collection.immutable.Seq
 import scala.sys.process.{ Process, ProcessLogger }
 
 object JavaFormatter {
+
+  private[sbt] val DefaultMaxLineLength = 100
 
   private val GoogleJavaFormatMain = "com.google.googlejavaformat.java.Main"
   private val JavaHomeEnvVar = "SBT_JAVAFMT_JAVA_HOME"
@@ -51,7 +54,8 @@ object JavaFormatter {
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Unit = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     cachedFormatSources(
       cacheStoreFactory,
@@ -65,7 +69,8 @@ object JavaFormatter {
       fixImportsOnly = false,
       sortImports,
       removeUnusedImports,
-      reflowLongStrings)
+      reflowLongStrings,
+      maxLineLength)
   }
 
   def fixImports(
@@ -80,8 +85,7 @@ object JavaFormatter {
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
-      removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Unit = {
+      removeUnusedImports: Boolean): Unit = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     cachedFormatSources(
       cacheStoreFactory,
@@ -95,7 +99,9 @@ object JavaFormatter {
       fixImportsOnly = true,
       sortImports,
       removeUnusedImports,
-      reflowLongStrings)
+      // Full-formatting options are ignored in import-only mode.
+      reflowLongStrings = true,
+      maxLineLength = DefaultMaxLineLength)
   }
 
   def check(
@@ -112,7 +118,8 @@ object JavaFormatter {
       javaMaxHeap: Option[String],
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Boolean = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     val analysis =
       cachedCheckSources(
@@ -128,7 +135,8 @@ object JavaFormatter {
         fixImportsOnly = false,
         sortImports,
         removeUnusedImports,
-        reflowLongStrings)
+        reflowLongStrings,
+        maxLineLength)
     trueOrBoom(analysis)
   }
 
@@ -145,8 +153,7 @@ object JavaFormatter {
       formatterClasspath: Seq[File],
       javaMaxHeap: Option[String],
       sortImports: Boolean,
-      removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Boolean = {
+      removeUnusedImports: Boolean): Boolean = {
     val files = sourceDirectories.descendantsExcept(includeFilter, excludeFilter).get().toList
     val analysis =
       cachedCheckSources(
@@ -162,7 +169,9 @@ object JavaFormatter {
         fixImportsOnly = true,
         sortImports,
         removeUnusedImports,
-        reflowLongStrings)
+        // Full-formatting options are ignored in import-only mode.
+        reflowLongStrings = true,
+        maxLineLength = DefaultMaxLineLength)
     trueOrBoom(analysis)
   }
 
@@ -202,8 +211,11 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Analysis = {
-    trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Analysis = {
+    val flags = cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings, maxLineLength)
+    val inputs = formatterCacheInputs(flags, formatterClasspath, javaMaxHeap)
+    trackSourcesViaCache(cacheStoreFactory, sources, inputs, fixImportsOnly) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
       val filesToCheck: Set[File] = updatedOrAdded
@@ -221,7 +233,8 @@ object JavaFormatter {
         fixImportsOnly,
         sortImports,
         removeUnusedImports,
-        reflowLongStrings)
+        reflowLongStrings,
+        maxLineLength)
       prev.copy(failedCheck = result.failedCheck | prevFailed)
     }
   }
@@ -242,7 +255,8 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Analysis = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Analysis = {
     if (sources.nonEmpty) {
       log.info(s"Checking ${sources.size} Java source${plural(sources.size)}...")
     }
@@ -259,7 +273,8 @@ object JavaFormatter {
         fixImportsOnly,
         sortImports,
         removeUnusedImports,
-        reflowLongStrings)
+        reflowLongStrings,
+        maxLineLength)
     unformatted.foreach { file => warnBadFormat(file.relativeTo(baseDir).getOrElse(file), log) }
     Analysis(failedCheck = unformatted)
   }
@@ -276,8 +291,11 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Unit = {
-    trackSourcesViaCache(cacheStoreFactory, sources) { (outDiff, prev) =>
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Unit = {
+    val flags = cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings, maxLineLength)
+    val inputs = formatterCacheInputs(flags, formatterClasspath, javaMaxHeap)
+    trackSourcesViaCache(cacheStoreFactory, sources, inputs, fixImportsOnly) { (outDiff, prev) =>
       log.debug(outDiff.toString)
       val updatedOrAdded = outDiff.modified & outDiff.checked
       val filesToFormat: Set[File] = updatedOrAdded | prev.failedCheck
@@ -294,7 +312,8 @@ object JavaFormatter {
           fixImportsOnly,
           sortImports,
           removeUnusedImports,
-          reflowLongStrings)
+          reflowLongStrings,
+          maxLineLength)
       }
       Analysis(Set.empty)
     }
@@ -311,7 +330,8 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Unit = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Unit = {
     val changed =
       runCheck(
         baseDir = new File("."),
@@ -326,6 +346,7 @@ object JavaFormatter {
         sortImports,
         removeUnusedImports,
         reflowLongStrings,
+        maxLineLength,
         warnOnFailure = false)
     if (changed.nonEmpty) {
       runReplace(
@@ -339,22 +360,55 @@ object JavaFormatter {
         fixImportsOnly,
         sortImports,
         removeUnusedImports,
-        reflowLongStrings)
+        reflowLongStrings,
+        maxLineLength)
     }
     val cnt = changed.size
     log.info(s"Reformatted $cnt Java source${plural(cnt)}")
   }
 
-  private def trackSourcesViaCache(cacheStoreFactory: CacheStoreFactory, sources: Seq[File])(
-      f: (ChangeReport[File], Analysis) => Analysis): Analysis = {
-    val prevTracker = Tracked.lastOutput[Unit, Analysis](cacheStoreFactory.make("last")) { (_, prev0) =>
-      val prev = prev0.getOrElse(Analysis(Set.empty))
-      Tracked.diffOutputs(cacheStoreFactory.make("output-diff"), FileInfo.lastModified)(sources.toSet) {
-        (outDiff: ChangeReport[File]) => f(outDiff, prev)
-      }
-
+  private def javaHomeCacheInput: String = {
+    val javaHome = new File(javaHomeSourceAndPath._2)
+    try {
+      // Avoid Java 11's canonical-path cache so retargeted symlinks are noticed immediately.
+      javaHome.toPath.toRealPath().toString
+    } catch {
+      // Missing or invalid homes must only fail when the formatter is actually launched.
+      case _: IOException | _: InvalidPathException => javaHome.getAbsolutePath
     }
-    prevTracker(())
+  }
+
+  private def formatterCacheInputs(
+      flags: Seq[String],
+      formatterClasspath: Seq[File],
+      javaMaxHeap: Option[String]): Seq[String] =
+    Seq(javaHomeCacheInput) ++ javaArgs(flags, formatterClasspath, javaMaxHeap) ++ formatterClasspath.flatMap { file =>
+      Seq(file.lastModified().toString, file.length().toString)
+    }
+
+  private def trackSourcesViaCache(
+      cacheStoreFactory: CacheStoreFactory,
+      sources: Seq[File],
+      inputs: Seq[String],
+      fixImportsOnly: Boolean)(f: (ChangeReport[File], Analysis) => Analysis): Analysis = {
+    val cache = cacheStoreFactory.sub(if (fixImportsOnly) "imports-only" else "format")
+    val last = cache.make("last")
+    val outputDiff = cache.make("output-diff")
+    val inputsTracker = Tracked.inputChanged[List[String], Analysis](cache.make("inputs")) { (changed, _) =>
+      if (changed) {
+        // Clear both source stamps and failed checks when the effective formatter invocation changes.
+        last.delete()
+        outputDiff.delete()
+      }
+      val prevTracker = Tracked.lastOutput[Unit, Analysis](last) { (_, prev0) =>
+        val prev = prev0.getOrElse(Analysis(Set.empty))
+        Tracked.diffOutputs(outputDiff, FileInfo.lastModified)(sources.toSet) { (outDiff: ChangeReport[File]) =>
+          f(outDiff, prev)
+        }
+      }
+      prevTracker(())
+    }
+    inputsTracker(inputs.toList)
   }
 
   private def cliFlags(
@@ -362,18 +416,10 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Seq[String] = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Seq[String] = {
     val styleFlags =
       if (options.style() == JavaFormatterOptions.Style.AOSP) Seq("--aosp")
-      else Nil
-    val javadocFlags =
-      if (options.formatJavadoc()) Nil
-      else Seq("--skip-javadoc-formatting")
-    val reorderModifiersFlags =
-      if (options.reorderModifiers()) Nil
-      else Seq("--skip-reordering-modifiers")
-    val fixImportsOnlyFlags =
-      if (fixImportsOnly) Seq("--fix-imports-only")
       else Nil
     val sortImportsFlags =
       if (sortImports) Nil
@@ -381,10 +427,24 @@ object JavaFormatter {
     val removeUnusedImportsFlags =
       if (removeUnusedImports) Nil
       else Seq("--skip-removing-unused-imports")
-    val reflowLongStringsFlags =
-      if (reflowLongStrings) Nil
-      else Seq("--skip-reflowing-long-strings")
-    styleFlags ++ javadocFlags ++ reorderModifiersFlags ++ fixImportsOnlyFlags ++ sortImportsFlags ++ removeUnusedImportsFlags ++ reflowLongStringsFlags
+    val importFlags = styleFlags ++ sortImportsFlags ++ removeUnusedImportsFlags
+    if (fixImportsOnly) {
+      importFlags ++ Seq("--fix-imports-only")
+    } else {
+      val javadocFlags =
+        if (options.formatJavadoc()) Nil
+        else Seq("--skip-javadoc-formatting")
+      val reorderModifiersFlags =
+        if (options.reorderModifiers()) Nil
+        else Seq("--skip-reordering-modifiers")
+      val reflowLongStringsFlags =
+        if (reflowLongStrings) Nil
+        else Seq("--skip-reflowing-long-strings")
+      val maxLineLengthFlags =
+        if (maxLineLength == DefaultMaxLineLength) Nil
+        else Seq(s"--max-line-length=$maxLineLength")
+      importFlags ++ javadocFlags ++ reorderModifiersFlags ++ reflowLongStringsFlags ++ maxLineLengthFlags
+    }
   }
 
   private case class CliResult(exitCode: Int, stdout: Vector[String], stderr: Vector[String])
@@ -433,14 +493,15 @@ object JavaFormatter {
     }
   }
 
-  private lazy val javaBin: String = {
-    val javaHomeSourceAndPath =
-      sys.props
-        .get(JavaHomeProperty)
-        .filter(_.nonEmpty)
-        .map(path => (JavaHomeProperty, path))
-        .orElse(sys.env.get(JavaHomeEnvVar).filter(_.nonEmpty).map(path => (JavaHomeEnvVar, path)))
-        .getOrElse(("java.home", sys.props("java.home")))
+  private def javaHomeSourceAndPath: (String, String) =
+    sys.props
+      .get(JavaHomeProperty)
+      .filter(_.nonEmpty)
+      .map(path => (JavaHomeProperty, path))
+      .orElse(sys.env.get(JavaHomeEnvVar).filter(_.nonEmpty).map(path => (JavaHomeEnvVar, path)))
+      .getOrElse(("java.home", sys.props("java.home")))
+
+  private def javaBin: String = {
     val (javaHomeSource, javaHomePath) = javaHomeSourceAndPath
     val javaHome = new File(javaHomePath)
     val unixJava = new File(javaHome, "bin/java")
@@ -494,12 +555,13 @@ object JavaFormatter {
       sortImports: Boolean,
       removeUnusedImports: Boolean,
       reflowLongStrings: Boolean,
+      maxLineLength: Int,
       warnOnFailure: Boolean = true): Set[File] = {
     if (sources.isEmpty) {
       return Set.empty
     }
     val args =
-      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
+      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings, maxLineLength) ++ Seq(
         "--dry-run",
         "--set-exit-if-changed") ++ sources.map(_.getAbsolutePath)
     val result = runCli(args, formatterClasspath, log, javaMaxHeap)
@@ -530,12 +592,13 @@ object JavaFormatter {
       fixImportsOnly: Boolean,
       sortImports: Boolean,
       removeUnusedImports: Boolean,
-      reflowLongStrings: Boolean): Unit = {
+      reflowLongStrings: Boolean,
+      maxLineLength: Int): Unit = {
     if (sources.isEmpty) {
       return
     }
     val args =
-      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings) ++ Seq(
+      cliFlags(options, fixImportsOnly, sortImports, removeUnusedImports, reflowLongStrings, maxLineLength) ++ Seq(
         "--replace") ++ sources.map(_.getAbsolutePath)
     val result = runCli(args, formatterClasspath, log, javaMaxHeap)
     if (result.exitCode != 0) {

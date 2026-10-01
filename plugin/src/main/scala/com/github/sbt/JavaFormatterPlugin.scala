@@ -72,6 +72,9 @@ object JavaFormatterPlugin extends AutoPlugin {
         "Selects the google-java-format runtime line by compatible Java version. Supported values: 11, 17, 21.")
     val javafmtStyle =
       settingKey[JavaFormatterOptions.Style]("Define formatting style, Google Java Style (default) or AOSP")
+    val javafmtMaxLineLength =
+      settingKey[Int](
+        s"Maximum line length used by google-java-format. Defaults to ${JavaFormatter.DefaultMaxLineLength}; custom values require the Java 21 formatter runtime line.")
     val javafmtJavaMaxHeap =
       settingKey[Option[String]]("Maximum heap size passed to the forked google-java-format JVM, e.g. Some(\"256m\").")
     val javafmtSortImports =
@@ -119,6 +122,7 @@ object JavaFormatterPlugin extends AutoPlugin {
       javafmtOnCompile := false,
       javafmtFormatterCompatibleJavaVersion := 21,
       javafmtStyle := JavaFormatterOptions.Style.GOOGLE,
+      javafmtMaxLineLength := JavaFormatter.DefaultMaxLineLength,
       javafmtJavaMaxHeap := Some("256m"),
       javafmtSortImports := true,
       javafmtRemoveUnusedImports := true,
@@ -143,8 +147,9 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = streamz.cacheStoreFactory
+        val maxLineLength = javafmtMaxLineLength.value
         val options =
-          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value, maxLineLength)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -163,7 +168,8 @@ object JavaFormatterPlugin extends AutoPlugin {
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
-          reflowLongStrings)
+          reflowLongStrings,
+          maxLineLength)
       },
       javafmtCheck := {
         val streamz = streams.value
@@ -174,8 +180,9 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
+        val maxLineLength = javafmtMaxLineLength.value
         val options =
-          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
+          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value, maxLineLength)
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
@@ -195,7 +202,8 @@ object JavaFormatterPlugin extends AutoPlugin {
           javaMaxHeap,
           sortImports,
           removeUnusedImports,
-          reflowLongStrings)
+          reflowLongStrings,
+          maxLineLength)
       },
       javafmtFixImports := {
         val streamz = streams.value
@@ -204,14 +212,12 @@ object JavaFormatterPlugin extends AutoPlugin {
         val sD = (javafmt / sourceDirectories).value.toList
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
-        val cache = streamz.cacheStoreFactory
-        val options =
-          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
+        val cache = (javafmt / streams).value.cacheStoreFactory
+        val options = javafmtOptions.value
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
-        val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImports(
           projectId,
           invocationId,
@@ -224,8 +230,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           formatterClasspath,
           javaMaxHeap,
           sortImports,
-          removeUnusedImports,
-          reflowLongStrings)
+          removeUnusedImports)
       },
       javafmtFixImportsCheck := {
         val streamz = streams.value
@@ -236,13 +241,11 @@ object JavaFormatterPlugin extends AutoPlugin {
         val iF = (javafmt / includeFilter).value
         val eF = (javafmt / excludeFilter).value
         val cache = (javafmt / streams).value.cacheStoreFactory
-        val options =
-          validateOptions(javafmtOptions.value, javafmtFormatterCompatibleJavaVersion.value)
+        val options = javafmtOptions.value
         val formatterClasspath = javafmtFormatterClasspath.value.toVector
         val javaMaxHeap = javafmtJavaMaxHeap.value
         val sortImports = javafmtSortImports.value
         val removeUnusedImports = javafmtRemoveUnusedImports.value
-        val reflowLongStrings = javafmtReflowLongStrings.value
         JavaFormatter.fixImportsCheck(
           projectId,
           invocationId,
@@ -256,8 +259,7 @@ object JavaFormatterPlugin extends AutoPlugin {
           formatterClasspath,
           javaMaxHeap,
           sortImports,
-          removeUnusedImports,
-          reflowLongStrings)
+          removeUnusedImports)
       },
       javafmtDoFormatOnCompile := Def.settingDyn {
         if (javafmtOnCompile.value) {
@@ -287,14 +289,27 @@ object JavaFormatterPlugin extends AutoPlugin {
     compatibleJavaVersion match {
       case 11    => "1.24.0"
       case 17    => "1.28.0"
-      case 21    => "1.36.1"
+      case 21    => "1.37.0"
       case other =>
         throw new MessageOnlyException(
           s"Unsupported javafmtFormatterCompatibleJavaVersion: $other. Expected one of: 11, 17, 21.")
     }
 
-  private def validateOptions(options: JavaFormatterOptions, compatibleJavaVersion: Int): JavaFormatterOptions = {
-    if (!options.reorderModifiers() && compatibleJavaVersion != 21) {
+  private def validateOptions(
+      options: JavaFormatterOptions,
+      compatibleJavaVersion: Int,
+      maxLineLength: Int): JavaFormatterOptions = {
+    if (maxLineLength <= 0) {
+      throw new MessageOnlyException(s"javafmtMaxLineLength must be positive, but was $maxLineLength.")
+    }
+    if (maxLineLength != JavaFormatter.DefaultMaxLineLength && compatibleJavaVersion < 21) {
+      throw new MessageOnlyException(
+        "A custom javafmtMaxLineLength requires " +
+        "ThisBuild / javafmtFormatterCompatibleJavaVersion := 21 " +
+        "because the Java 11 and Java 17 formatter runtime lines do not support " +
+        "--max-line-length.")
+    }
+    if (!options.reorderModifiers() && compatibleJavaVersion < 21) {
       throw new MessageOnlyException(
         "Disabling modifier reordering requires " +
         "ThisBuild / javafmtFormatterCompatibleJavaVersion := 21 " +

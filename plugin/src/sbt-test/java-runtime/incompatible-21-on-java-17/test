@@ -1,1 +1,10 @@
 -> javafmtAll
+
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+> javafmtAll
+> javafmtCheckAll
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 21
+-> javafmtAll
+-> javafmtCheckAll
+> set ThisBuild / javafmtFormatterCompatibleJavaVersion := 17
+> javafmtCheckAll
